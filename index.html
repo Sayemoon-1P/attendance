@@ -108,6 +108,8 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
 .paper .h b{font-size:19px;display:block}
 .paper table.form th,.paper table.form td{border:1px solid #9aa6ad;padding:6px 6px}
 .paper table.form th{background:#eef3f2;color:var(--ink);text-align:center}
+/* รายงานประจำวัน: หัวตาราง ชื่อ-สกุล และลิงก์ภาพ อยู่บรรทัดเดียว (คอลัมน์ขยายตามข้อความ) */
+.paper table.daily th,.paper table.daily td.name,.paper table.daily td a{white-space:nowrap}
 .sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-top:14px;font-size:15px}
 .sign{margin:22px 0 0 auto;width:max-content;max-width:100%;text-align:center;line-height:2}
 
@@ -166,6 +168,9 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
   .card{box-shadow:none;margin:0;padding:0}
   .paper{padding:0}
   .tbl-wrap{overflow:visible}
+  .paper table.daily{font-size:13px}
+  .paper table.daily th,.paper table.daily td{padding:5px 4px}
+  .paper table.daily td:last-child{min-width:7.5em}
 }
 </style>
 </head>
@@ -313,14 +318,16 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
           <h3>พิกัดจุดกลางสำนักงาน</h3>
           <p class="small muted">ระบบใช้พิกัดกลางเพียงจุดเดียว ระยะลงเวลาเข้างานวัดเป็นเส้นตรงจากจุดนี้ ให้ไปยืนที่กลางอาคารสำนักงานแล้วกด "ใช้ตำแหน่งปัจจุบัน" หรือคัดลอกพิกัดจาก Google Maps มาวาง</p>
           <div id="officeNow" class="note info"></div>
-          <div class="btns"><button id="btnHere" class="btn">ใช้ตำแหน่งปัจจุบันของฉัน</button></div>
+          <div class="btns"><button id="btnHere" class="btn primary">① ใช้ตำแหน่งปัจจุบันของฉัน</button></div>
+          <div id="officeMsg"></div>
           <div class="row">
-            <div><label for="oLat">ละติจูด</label><input id="oLat" type="text" inputmode="decimal" placeholder="เช่น 17.123456"></div>
-            <div><label for="oLng">ลองจิจูด</label><input id="oLng" type="text" inputmode="decimal" placeholder="เช่น 103.123456"></div>
+            <div><label for="oLat">ละติจูด</label><input id="oLat" type="text" inputmode="text" placeholder="เช่น 17.123456"></div>
+            <div><label for="oLng">ลองจิจูด</label><input id="oLng" type="text" inputmode="text" placeholder="เช่น 103.123456"></div>
             <div><label for="oRad">รัศมี (เมตร)</label><input id="oRad" type="number" min="10" max="1000" step="1"></div>
           </div>
-          <div class="btns"><button id="btnSaveOffice" class="btn primary">บันทึกพิกัด</button></div>
-          <div id="officeMsg"></div>
+          <p class="small muted">หรือคัดลอกพิกัดจาก Google Maps / Apple Maps (เช่น "17.123456, 103.123456") มาวางในช่องละติจูดช่องเดียวได้เลย</p>
+          <div class="btns"><button id="btnSaveOffice" class="btn primary">② บันทึกพิกัด</button></div>
+          <div id="officeSaveMsg"></div>
         </div>
         <div class="card">
           <h3>ทดสอบรัศมี</h3>
@@ -561,6 +568,36 @@ async function withBusy(btn, fn) {
   try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = old; }
 }
 
+/* ---------- ข้อความแนะนำการอนุญาตสิทธิ์ แยก iPhone / Android ---------- */
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function geoDeniedMsg() {
+  return IS_IOS
+    ? 'iPhone ยังไม่อนุญาตให้เว็บนี้ใช้ตำแหน่ง — แก้ดังนี้: (1) การตั้งค่า › ความเป็นส่วนตัวและความปลอดภัย › บริการหาตำแหน่ง: เปิด แล้วแตะ "เว็บไซต์ Safari" เลือก "ขณะใช้งานแอป" และเปิด "ตำแหน่งที่แม่นยำ" (2) กลับมาที่ Safari แตะปุ่ม "aA" (หรือ ☰) ที่ช่องที่อยู่เว็บ › การตั้งค่าเว็บไซต์ › ตำแหน่งที่ตั้ง › อนุญาต (3) โหลดหน้าเว็บใหม่แล้วลองอีกครั้ง'
+    : 'ยังไม่ได้อนุญาตให้เว็บนี้ใช้ตำแหน่ง — เปิด "ตำแหน่ง" (GPS) ของโทรศัพท์ แล้วใน Chrome แตะไอคอนด้านหน้าช่องที่อยู่เว็บ › สิทธิ์ › ตำแหน่ง › อนุญาต จากนั้นโหลดหน้าเว็บใหม่';
+}
+function camDeniedMsg() {
+  return IS_IOS
+    ? 'iPhone ยังไม่อนุญาตให้เว็บนี้ใช้กล้อง — ใน Safari แตะปุ่ม "aA" (หรือ ☰) ที่ช่องที่อยู่เว็บ › การตั้งค่าเว็บไซต์ › กล้อง › อนุญาต (หรือ การตั้งค่า › Safari › กล้อง › อนุญาต) แล้วโหลดหน้าเว็บใหม่'
+    : 'ยังไม่ได้อนุญาตให้เว็บนี้ใช้กล้อง — ใน Chrome แตะไอคอนด้านหน้าช่องที่อยู่เว็บ › สิทธิ์ › กล้อง › อนุญาต แล้วโหลดหน้าเว็บใหม่';
+}
+
+/** อ่านพิกัดจากข้อความที่วาง: "17.1, 103.2" หรือ "17.1° N, 103.2° E" → {lat, lng} หรือ null */
+function parseCoords(a, b) {
+  const text = String(a || '') + ' ' + String(b || '');
+  if (/['"′″]/.test(text)) return null; // องศา-ลิปดา-ฟิลิปดา ไม่รองรับ
+  const nums = [];
+  text.replace(/(-?\d+(?:\.\d+)?)\s*°?\s*(N|S|E|W|เหนือ|ใต้|ตะวันออก|ตะวันตก)?/gi, (m, num, h) => {
+    let v = parseFloat(num);
+    if (h && /^(S|W|ใต้|ตะวันตก)$/i.test(h)) v = -v;
+    nums.push(v);
+    return m;
+  });
+  if (nums.length < 2) return null;
+  const lat = nums[0], lng = nums[1];
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || (lat === 0 && lng === 0)) return null;
+  return { lat: lat.toFixed(6), lng: lng.toFixed(6) };
+}
+
 /* ---------- ระยะทาง (Haversine) — ใช้แสดงผลเท่านั้น เซิร์ฟเวอร์คำนวณซ้ำเพื่อตัดสิน ---------- */
 function distM(lat1, lng1, lat2, lng2) {
   const R = 6371000, r = x => x * Math.PI / 180;
@@ -589,7 +626,7 @@ function getPosition(opt) {
       if (onUpdate) onUpdate(best);
       if (cur.accuracy <= goodAcc) finish();
     }, e => {
-      if (e.code === 1) finish(new Error('ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง — กดอนุญาต "ตำแหน่งที่ตั้ง" ให้เว็บไซต์นี้ในการตั้งค่าเบราว์เซอร์ แล้วลองใหม่'));
+      if (e.code === 1) finish(new Error(geoDeniedMsg()));
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: maxWait });
     timer = setTimeout(() => finish(), maxWait);
     if (tok) poll = setInterval(() => { if (tok.cancelled) finish(); }, 300);
@@ -624,7 +661,7 @@ function loadFace() {
 
 function camErr(e) {
   const n = e && e.name;
-  if (n === 'NotAllowedError' || n === 'SecurityError') return 'ไม่ได้รับอนุญาตให้ใช้กล้อง — กดอนุญาตกล้องให้เว็บไซต์นี้ในการตั้งค่าเบราว์เซอร์ แล้วลองใหม่';
+  if (n === 'NotAllowedError' || n === 'SecurityError') return camDeniedMsg();
   if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'ไม่พบกล้องหน้าในอุปกรณ์นี้';
   if (n === 'NotReadableError') return 'กล้องถูกใช้งานโดยแอปอื่นอยู่ กรุณาปิดแอปนั้นแล้วลองใหม่';
   return 'เปิดกล้องไม่สำเร็จ: ' + (e && e.message ? e.message : e);
@@ -858,7 +895,7 @@ function dailyHtml(r) {
   const sm = r.summary;
   const cnt = t => (sm.byType.find(b => b.type === t) || { count: 0 }).count;
   const rows = r.rows.map(x => `<tr>
-      <td class="num">${x.no}</td><td>${esc(x.name)}</td><td>${esc(x.position)}</td>
+      <td class="num">${x.no}</td><td class="name">${esc(x.name)}</td><td>${esc(x.position)}</td>
       <td class="num">${x.in ? 'สแกน ✓' : ''}</td><td class="num">${esc(x.in)}</td>
       <td class="num">${x.out ? 'สแกน ✓' : ''}</td><td class="num">${esc(x.out)}</td>
       <td>${esc(x.note)}${x.photoIn ? ` <a class="no-print small" href="${esc(x.photoIn)}" target="_blank" rel="noopener">ภาพเข้า</a>` : ''}${x.photoOut ? ` <a class="no-print small" href="${esc(x.photoOut)}" target="_blank" rel="noopener">ภาพออก</a>` : ''}</td></tr>`);
@@ -870,7 +907,7 @@ function dailyHtml(r) {
     <div class="h"><b>บัญชีลงเวลาปฏิบัติราชการของเจ้าหน้าที่</b>
       <div>${esc(r.dateThai)}${r.holiday ? ' · ' + esc(r.holiday) : (!r.workday ? ' · วันหยุด' : '')}</div>
       <div>${esc(r.office.name)}   ${esc(r.office.address)}</div></div>
-    <div class="tbl-wrap"><table class="form">
+    <div class="tbl-wrap"><table class="form daily">
       <thead><tr><th>ลำดับ</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>ยืนยันตัวตน</th><th>เวลามา</th><th>ยืนยันตัวตน</th><th>เวลากลับ</th><th>หมายเหตุ</th></tr></thead>
       <tbody>${rows.join('')}</tbody></table></div>
     <div class="sumgrid">
@@ -902,6 +939,51 @@ async function loadMonthly() {
       <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
     </div>`;
   } catch (e) { out.innerHTML = errHtml(e); }
+}
+
+/* พิมพ์: เปิดรายงานในแท็บใหม่ที่มีเฉพาะแบบฟอร์ม (A4) แล้วสั่งพิมพ์ */
+const PRINT_CSS = `
+*{box-sizing:border-box}
+body{margin:0;background:#e9eeed;font-family:'Sarabun',Tahoma,sans-serif;color:#111;font-size:15px;line-height:1.5}
+.bar{position:sticky;top:0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#0f766e;color:#fff;padding:10px 16px}
+.bar button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 18px;background:#fff;color:#0b5c56;cursor:pointer}
+.bar span{font-size:13px;opacity:.9}
+.page{background:#fff;width:100%;max-width:210mm;margin:16px auto;padding:14mm 12mm;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.paper .h{text-align:center;margin-bottom:10px}.paper .h b{font-size:19px;display:block}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid #8a969c;padding:6px;vertical-align:top;text-align:left}
+th{background:#eef3f2;text-align:center;font-weight:600}
+td.num,th.num{text-align:center}
+table.daily th,table.daily td.name{white-space:nowrap}
+table.daily{font-size:13px}table.daily th,table.daily td{padding:5px 4px}table.daily td:last-child{min-width:7.5em}
+.tbl-wrap{overflow:visible}
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-top:14px}
+.sign{margin:22px 0 0 auto;width:max-content;max-width:100%;text-align:center;line-height:2}
+.small{font-size:12px}.muted{color:#666}.no-print{display:none!important}
+@media (max-width:640px){.page{padding:12px;margin:0}}
+@media print{@page{size:A4;margin:12mm}body{background:#fff}.bar{display:none}.page{box-shadow:none;margin:0;padding:0;max-width:none}}`;
+
+function printDocHtml(paperHtml, title) {
+  return `<!doctype html><html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>${PRINT_CSS}</style></head><body>
+<div class="bar"><button type="button" onclick="window.print()">🖨 พิมพ์ / บันทึกเป็น PDF</button>
+<span>ถ้าหน้าต่างพิมพ์ไม่ขึ้น: คอมพิวเตอร์กด Ctrl+P · iPhone แตะปุ่มแชร์ › พิมพ์ · Android เมนู ⋮ › แชร์ › พิมพ์</span></div>
+<div class="page paper">${paperHtml}</div>
+<script>window.addEventListener('load',function(){var go=function(){setTimeout(function(){window.print();},300);};
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(go);}else{go();}});<\/script>
+</body></html>`;
+}
+
+function printReport(outSel, title) {
+  const paper = $(outSel + ' .paper');
+  if (!paper) { toast('กรุณากด "แสดงรายงาน" ก่อน'); return; }
+  const w = window.open('', '_blank');
+  if (!w) { window.print(); return; } // ถูกบล็อกป๊อปอัป → พิมพ์จากหน้านี้แทน
+  w.document.open();
+  w.document.write(printDocHtml(paper.innerHTML, title));
+  w.document.close();
 }
 
 async function exportSheet(btn, action, payload, linkSel) {
@@ -1034,23 +1116,42 @@ function renderOffice() {
 }
 
 async function useHere() {
-  await withBusy($('#btnHere'), async () => {
-    const msg = $('#officeMsg');
-    msg.innerHTML = '<div class="note info">กำลังหาตำแหน่ง… กรุณายืนนิ่งที่จุดกลางสำนักงาน (ไม่เกิน 30 วินาที)</div>';
-    try {
-      const p = await getPosition({ maxWait: 30000, goodAcc: 8, onUpdate: b => { msg.innerHTML = `<div class="note info">กำลังหาตำแหน่ง… คลาดเคลื่อน ±${Math.round(b.accuracy)} ม.</div>`; } });
-      $('#oLat').value = p.lat.toFixed(6); $('#oLng').value = p.lng.toFixed(6);
-      msg.innerHTML = `<div class="note ${p.accuracy > 20 ? 'warn' : 'info'}">ได้พิกัดแล้ว (คลาดเคลื่อน ±${Math.round(p.accuracy)} ม.)${p.accuracy > 20 ? ' — ค่อนข้างคลาดเคลื่อน แนะนำให้ลองใหม่ใกล้หน้าต่าง หรือคัดลอกพิกัดจาก Google Maps' : ''} กด "บันทึกพิกัด" เพื่อยืนยัน</div>`;
-    } catch (e) { msg.innerHTML = errHtml(e); }
-  });
+  const msg = $('#officeMsg');
+  $('#officeSaveMsg').innerHTML = '';
+  S.locating = true;
+  try {
+    await withBusy($('#btnHere'), async () => {
+      msg.innerHTML = '<div class="note info">กำลังหาตำแหน่ง… ถ้ามือถือถามขออนุญาตใช้ตำแหน่ง ให้กด <b>อนุญาต</b> แล้วยืนนิ่งที่จุดกลางสำนักงาน</div>';
+      const t0 = Date.now();
+      try {
+        const p = await getPosition({
+          maxWait: 30000, goodAcc: 15,
+          onUpdate: b => {
+            $('#oLat').value = b.lat.toFixed(6); $('#oLng').value = b.lng.toFixed(6);
+            const left = Math.max(0, 30 - Math.round((Date.now() - t0) / 1000));
+            msg.innerHTML = `<div class="note info">กำลังปรับความแม่นยำ… คลาดเคลื่อน ±${Math.round(b.accuracy)} ม. (รออีกไม่เกิน ${left} วินาที)</div>`;
+          },
+        });
+        $('#oLat').value = p.lat.toFixed(6); $('#oLng').value = p.lng.toFixed(6);
+        const poor = p.accuracy > 30;
+        msg.innerHTML = `<div class="note ${poor ? 'warn' : 'info'}">✓ ได้พิกัดแล้ว (คลาดเคลื่อน ±${Math.round(p.accuracy)} ม.)${poor ? ' — ค่อนข้างคลาดเคลื่อน แนะนำให้ลองใหม่ใกล้หน้าต่าง หรือคัดลอกพิกัดจากแอปแผนที่' : ''}<br>กด <b>② บันทึกพิกัด</b> ด้านล่างเพื่อยืนยัน</div>`;
+      } catch (e) { msg.innerHTML = errHtml(e); }
+    });
+  } finally { S.locating = false; }
 }
 
 async function saveOffice() {
-  const msg = $('#officeMsg');
-  let lat = $('#oLat').value.trim(), lng = $('#oLng').value.trim();
-  const m = lat.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
-  if (m) { lat = m[1]; lng = m[2]; $('#oLat').value = lat; $('#oLng').value = lng; }
-  if (!lat || !lng) { msg.innerHTML = errHtml('กรุณากรอกละติจูดและลองจิจูด'); return; }
+  const msg = $('#officeSaveMsg');
+  if (S.locating) { msg.innerHTML = '<div class="note warn">กำลังหาตำแหน่งอยู่ กรุณารอจนขึ้นว่า "✓ ได้พิกัดแล้ว" แล้วจึงกดบันทึก</div>'; return; }
+  const c = parseCoords($('#oLat').value, $('#oLng').value);
+  if (!c) {
+    msg.innerHTML = errHtml('ยังไม่มีพิกัด — กด "① ใช้ตำแหน่งปัจจุบันของฉัน" แล้วรอจนตัวเลขขึ้นในช่อง หรือคัดลอกพิกัดแบบทศนิยม (เช่น 17.123456, 103.123456) จากแอปแผนที่มาวางในช่องละติจูด');
+    return;
+  }
+  $('#oLat').value = c.lat; $('#oLng').value = c.lng;
+  const lat = c.lat, lng = c.lng;
+  if (!(lat >= 5 && lat <= 21 && lng >= 97 && lng <= 106) &&
+      !confirm(`พิกัด ${lat}, ${lng} ไม่ได้อยู่ในประเทศไทย (อาจสลับละติจูด/ลองจิจูด) ต้องการบันทึกต่อหรือไม่?`)) return;
   await withBusy($('#btnSaveOffice'), async () => {
     try {
       const r = await adminApi('officeSet', { lat, lng, radius: $('#oRad').value });
@@ -1104,10 +1205,10 @@ function bindUI() {
   $('#btnLogout').addEventListener('click', () => adminLogout());
   $$('.subnav button[data-sub]').forEach(b => b.addEventListener('click', () => openSub(b.dataset.sub)));
   $('#btnDaily').addEventListener('click', loadDaily);
-  $('#btnDailyPrint').addEventListener('click', () => window.print());
+  $('#btnDailyPrint').addEventListener('click', () => printReport('#dailyOut', 'บัญชีลงเวลา ' + ($('#dDate').value || '')));
   $('#btnDailyExport').addEventListener('click', e => exportSheet(e.currentTarget, 'exportDaily', { date: $('#dDate').value }, '#dailyLink'));
   $('#btnMonthly').addEventListener('click', loadMonthly);
-  $('#btnMonthlyPrint').addEventListener('click', () => window.print());
+  $('#btnMonthlyPrint').addEventListener('click', () => printReport('#monthlyOut', 'สรุปการลงเวลา ' + ($('#mMonth').value || '')));
   $('#btnMonthlyExport').addEventListener('click', e => exportSheet(e.currentTarget, 'exportMonthly', { month: $('#mMonth').value }, '#monthlyLink'));
   $('#btnAddStaff').addEventListener('click', () => staffForm(''));
   $('#staffList').addEventListener('click', e => {
