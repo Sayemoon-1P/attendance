@@ -896,6 +896,9 @@ function dailyHtml(r) {
   // สรุปท้ายรายงาน: ซ้าย = จำนวนคนตามประเภทบุคลากร (ชื่อประเภทมาจาก Code.gs), ขวา = สรุปการมาปฏิบัติงาน
   const right = [`มาปฏิบัติราชการ <b>${sm.present}</b> คน`, `ลา <b>${sm.leave}</b> คน`, `มาสาย <b>${sm.late}</b> คน`,
     `ไปราชการ <b>${sm.travel}</b> คน (ประชุม, อบรม, ศึกษาดูงาน)`];
+  // Code.gs เวอร์ชันเก่า (ก่อน 1.1.0) ไม่ส่ง label มา → เตือนให้ Deploy เวอร์ชันใหม่ (ไม่แสดงตอนพิมพ์)
+  const oldApi = sm.byType.some(b => !b.label) ? `<div class="note warn no-print">ระบบหลังบ้าน (Code.gs) ยังเป็นเวอร์ชันเก่า
+    สรุปประเภทบุคลากรจึงอาจไม่ถูกต้อง — ใน Apps Script ให้กด Deploy › จัดการการทำให้ใช้งานได้ › ✏️ แก้ไข › เวอร์ชันใหม่ › ทำให้ใช้งานได้</div>` : '';
   const sumRows = sm.byType.map((b, i) =>
     `<div>${esc(b.label || b.type)} <b>${b.count}</b> คน</div><div>${right[i] || ''}</div>`).join('');
   const rows = r.rows.map(x => `<tr>
@@ -914,7 +917,7 @@ function dailyHtml(r) {
     <div class="tbl-wrap"><table class="form daily">
       <thead><tr><th>ลำดับ</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>ยืนยันตัวตน</th><th>เวลามา</th><th>ยืนยันตัวตน</th><th>เวลากลับ</th><th>หมายเหตุ</th></tr></thead>
       <tbody>${rows.join('')}</tbody></table></div>
-    <div class="sumgrid">${sumRows}</div>
+    ${oldApi}<div class="sumgrid">${sumRows}</div>
     <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
     <p class="small muted" style="margin-top:14px">ข้อมูลจากระบบลงเวลาออนไลน์ — เข้างานยืนยันด้วยใบหน้าและ GPS ภายในรัศมี ${r.office.radius} ม. · ออกงานยืนยันด้วยใบหน้า · เวลาจากเซิร์ฟเวอร์</p>
   </div>${failed}`;
