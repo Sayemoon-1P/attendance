@@ -893,7 +893,11 @@ async function loadDaily() {
 
 function dailyHtml(r) {
   const sm = r.summary;
-  const cnt = t => (sm.byType.find(b => b.type === t) || { count: 0 }).count;
+  // สรุปท้ายรายงาน: ซ้าย = จำนวนคนตามประเภทบุคลากร (ชื่อประเภทมาจาก Code.gs), ขวา = สรุปการมาปฏิบัติงาน
+  const right = [`มาปฏิบัติราชการ <b>${sm.present}</b> คน`, `ลา <b>${sm.leave}</b> คน`, `มาสาย <b>${sm.late}</b> คน`,
+    `ไปราชการ <b>${sm.travel}</b> คน (ประชุม, อบรม, ศึกษาดูงาน)`];
+  const sumRows = sm.byType.map((b, i) =>
+    `<div>${esc(b.label || b.type)} <b>${b.count}</b> คน</div><div>${right[i] || ''}</div>`).join('');
   const rows = r.rows.map(x => `<tr>
       <td class="num">${x.no}</td><td class="name">${esc(x.name)}</td><td>${esc(x.position)}</td>
       <td class="num">${x.in ? 'สแกน ✓' : ''}</td><td class="num">${esc(x.in)}</td>
@@ -910,12 +914,7 @@ function dailyHtml(r) {
     <div class="tbl-wrap"><table class="form daily">
       <thead><tr><th>ลำดับ</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>ยืนยันตัวตน</th><th>เวลามา</th><th>ยืนยันตัวตน</th><th>เวลากลับ</th><th>หมายเหตุ</th></tr></thead>
       <tbody>${rows.join('')}</tbody></table></div>
-    <div class="sumgrid">
-      <div>ข้าราชการทั้งหมด <b>${cnt('ข้าราชการ')}</b> คน</div><div>มาปฏิบัติราชการ <b>${sm.present}</b> คน</div>
-      <div>ลูกจ้างชั่วคราว/นักเรียนทุน <b>${cnt('ลูกจ้างชั่วคราว/นักเรียนทุน')}</b> คน</div><div>ลา <b>${sm.leave}</b> คน</div>
-      <div>พนักงานจ้างเหมาบริการ <b>${cnt('พนักงานจ้างเหมาบริการ')}</b> คน</div><div>มาสาย <b>${sm.late}</b> คน</div>
-      <div>ผู้ช่วยเหลือคนไข้ <b>${cnt('ผู้ช่วยเหลือคนไข้')}</b> คน</div><div>ไปราชการ <b>${sm.travel}</b> คน (ประชุม, อบรม, ศึกษาดูงาน)</div>
-    </div>
+    <div class="sumgrid">${sumRows}</div>
     <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
     <p class="small muted" style="margin-top:14px">ข้อมูลจากระบบลงเวลาออนไลน์ — เข้างานยืนยันด้วยใบหน้าและ GPS ภายในรัศมี ${r.office.radius} ม. · ออกงานยืนยันด้วยใบหน้า · เวลาจากเซิร์ฟเวอร์</p>
   </div>${failed}`;
