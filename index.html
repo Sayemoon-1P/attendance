@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>ลงเวลาปฏิบัติงาน รพ.สต.ทรายมูล</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f6f5; --card:#ffffff; --ink:#15212b; --muted:#5b6872; --line:#dde5e3;
+  --brand:#0f766e; --brand-dark:#0b5c56; --brand-soft:#e2f2ef;
+  --out:#b45309; --out-dark:#92400e; --out-soft:#fdf0df;
+  --ok:#15803d; --ok-soft:#e6f6eb; --bad:#b42318; --bad-soft:#fdeceb; --warn:#8a5a00; --warn-soft:#fff5d6;
+  --radius:16px; --shadow:0 1px 2px rgba(16,24,40,.05),0 2px 8px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Sarabun',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+body.lock{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{line-height:1.3;margin:0}
+a{color:var(--brand)}
+[hidden]{display:none!important}
+
+/* ส่วนหัว */
+.top{background:linear-gradient(160deg,#0f766e,#115e59);color:#fff;padding:18px 16px 22px;
+  padding-top:max(18px,env(safe-area-inset-top))}
+.top .wrap{max-width:560px;margin:0 auto}
+.top small{opacity:.85;font-size:13px;display:block}
+.top h1{font-size:19px;font-weight:700;margin-top:2px}
+.clock{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:12px;flex-wrap:wrap}
+.clock b{font-size:40px;font-weight:700;letter-spacing:1px;font-variant-numeric:tabular-nums;line-height:1}
+.clock span{font-size:14px;opacity:.9}
+
+/* แท็บ */
+.tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 6px}
+.tabs .wrap{max-width:560px;margin:0 auto;display:flex;gap:6px;background:#e3eae8;border-radius:12px;padding:4px}
+.tabs button{flex:1;border:0;background:transparent;padding:9px 6px;border-radius:9px;font-weight:600;color:var(--muted);cursor:pointer}
+.tabs button.on{background:#fff;color:var(--brand-dark);box-shadow:var(--shadow)}
+
+main{max-width:560px;margin:0 auto;padding:6px 16px 40px}
+body.wide main,body.wide .tabs .wrap,body.wide .top .wrap{max-width:980px}
+.tab{display:none}.tab.on{display:block}
+
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:12px 0}
+.card h3{font-size:16px;margin-bottom:8px}
+label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px;font-weight:500}
+label:first-child{margin-top:0}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{
+  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px;min-height:46px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:transparent}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+.muted{color:var(--muted)}.small{font-size:13px}.c{text-align:center}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:11px 16px;
+  font-weight:600;cursor:pointer;min-height:46px;text-decoration:none;background:#e8eeec;color:var(--ink)}
+.btn.primary{background:var(--brand);color:#fff}.btn.primary:hover{background:var(--brand-dark)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.ghost{background:transparent;border:1px solid var(--line)}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:14px;border-radius:10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* ปุ่มลงเวลา */
+.big{width:100%;border:0;border-radius:20px;padding:18px 18px;margin:10px 0 0;color:#fff;cursor:pointer;
+  display:flex;align-items:center;gap:14px;text-align:left;box-shadow:var(--shadow);min-height:88px}
+.big svg{flex:none;width:40px;height:40px}
+.big b{display:block;font-size:21px;font-weight:700}
+.big small{display:block;font-size:14px;opacity:.92}
+.big.in{background:var(--brand)}.big.in:active{background:var(--brand-dark)}
+.big.out{background:var(--out)}.big.out:active{background:var(--out-dark)}
+.big:disabled{background:#9aa6ad;cursor:not-allowed}
+
+.today{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.today div{background:var(--bg);border-radius:12px;padding:10px 12px}
+.today span{display:block;font-size:13px;color:var(--muted)}
+.today b{font-size:22px;font-variant-numeric:tabular-nums}
+.today em{font-style:normal;font-size:13px;margin-left:6px}
+.note{border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.bad{background:var(--bad-soft);color:var(--bad)}
+.note.info{background:var(--brand-soft);color:var(--brand-dark)}
+.rules ul{margin:0;padding-left:20px}.rules li{margin:4px 0;font-size:14px}
+
+.tag{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.bad{background:var(--bad-soft);color:var(--bad)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}.tag.info{background:var(--brand-soft);color:var(--brand-dark)}
+.tag.gray{background:#eceff1;color:var(--muted)}
+
+/* ตาราง */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:13px;background:#f7faf9}
+td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin:10px 0}
+.stats div{background:var(--bg);border-radius:12px;padding:8px 10px}
+.stats b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stats span{font-size:12px;color:var(--muted)}
+
+/* แบบฟอร์มรายงาน (เหมือนกระดาษ) */
+.paper{background:#fff;padding:18px 14px}
+.paper .h{text-align:center;margin-bottom:10px}
+.paper .h b{font-size:19px;display:block}
+.paper table.form th,.paper table.form td{border:1px solid #9aa6ad;padding:6px 6px}
+.paper table.form th{background:#eef3f2;color:var(--ink);text-align:center}
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-top:14px;font-size:15px}
+.sign{margin:22px 0 0 auto;width:max-content;max-width:100%;text-align:center;line-height:2}
+
+/* แผงผู้ดูแล */
+.subnav{display:flex;gap:6px;overflow-x:auto;padding:4px 0 2px;-webkit-overflow-scrolling:touch}
+.subnav button{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-weight:600;
+  font-size:14px;cursor:pointer;color:var(--muted)}
+.subnav button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.sub{display:none}.sub.on{display:block}
+.staff-item{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.staff-item:last-child{border-bottom:0}
+.staff-item .who{min-width:0}
+.staff-item .who b{display:block}
+.staff-item .acts{display:flex;gap:6px;flex:none}
+
+/* หน้าต่างซ้อน */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(10,20,25,.62);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 16px;
+  padding-bottom:max(18px,env(safe-area-inset-bottom));max-height:96vh;overflow:auto}
+@media (min-width:600px){.overlay{align-items:center}.sheet{border-radius:22px}}
+.sheet h2{font-size:20px}
+.cam{position:relative;width:100%;max-width:340px;margin:12px auto 8px;aspect-ratio:3/4;border-radius:20px;overflow:hidden;background:#0d1417}
+.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.ring{position:absolute;left:50%;top:46%;width:64%;height:68%;transform:translate(-50%,-50%);border-radius:50%;
+  border:4px dashed rgba(255,255,255,.75);transition:border-color .2s}
+.ring.ok{border:4px solid #4ade80}.ring.bad{border:4px solid #f87171}
+.steps{list-style:none;display:flex;gap:6px;padding:0;margin:8px 0}
+.steps li{flex:1;font-size:13px;text-align:center;padding:6px 4px;border-radius:10px;background:#eef2f1;color:var(--muted);font-weight:600}
+.steps li.active{background:var(--warn-soft);color:var(--warn)}
+.steps li.done{background:var(--ok-soft);color:var(--ok)}
+.steps li.done::before{content:'✓ '}
+.scan-msg{text-align:center;min-height:48px;margin:8px 0;font-weight:500}
+.res-icon{width:72px;height:72px;border-radius:50%;margin:6px auto 10px;display:flex;align-items:center;justify-content:center}
+.res-icon svg{width:40px;height:40px}
+.res-icon.ok{background:var(--ok-soft);color:var(--ok)}.res-icon.bad{background:var(--bad-soft);color:var(--bad)}
+.res-icon.warn{background:var(--warn-soft);color:var(--warn)}
+.result h2{text-align:center}
+.result .body{margin:10px 0 14px;text-align:center}
+.result .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;text-align:left;background:var(--bg);border-radius:12px;padding:12px;margin-top:10px}
+.result .kv span{color:var(--muted)}
+.banner{max-width:560px;margin:12px auto 0;padding:0 16px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f2a30;color:#fff;padding:10px 16px;border-radius:12px;
+  z-index:60;font-size:15px;max-width:calc(100% - 32px)}
+.spin{width:18px;height:18px;border:3px solid rgba(0,0,0,.15);border-top-color:var(--brand);border-radius:50%;
+  display:inline-block;animation:sp 0.8s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.consent{background:var(--bg);border-radius:12px;padding:12px;font-size:14px;margin:10px 0}
+.check{display:flex;gap:10px;align-items:flex-start;color:var(--ink);font-size:15px;margin-top:10px}
+.check input{width:22px;height:22px;flex:none;margin-top:2px}
+
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;font-size:14px}
+  .top,.tabs,.no-print,.banner,.toast,.overlay{display:none!important}
+  main{max-width:none;padding:0}
+  .card{box-shadow:none;margin:0;padding:0}
+  .paper{padding:0}
+  .tbl-wrap{overflow:visible}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <small id="affil">องค์การบริหารส่วนจังหวัดสกลนคร</small>
+    <h1 id="officeName">โรงพยาบาลส่งเสริมสุขภาพตำบลทรายมูล</h1>
+    <div class="clock"><b id="clock">--:--:--</b><span id="dateText"></span></div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="เมนูหลัก">
+  <div class="wrap">
+    <button class="on" data-tab="clock">ลงเวลา</button>
+    <button data-tab="history">ประวัติ</button>
+    <button data-tab="admin">ผู้ดูแล</button>
+  </div>
+</nav>
+
+<div id="banner" class="banner" hidden></div>
+
+<main>
+  <!-- ========== ลงเวลา ========== -->
+  <section id="tab-clock" class="tab on">
+    <div class="card">
+      <label for="staffSel">ชื่อเจ้าหน้าที่</label>
+      <select id="staffSel"><option value="">กำลังโหลด…</option></select>
+      <div class="today">
+        <div><span>เข้างานวันนี้</span><b id="tIn">—</b><em id="tInS"></em></div>
+        <div><span>ออกงานวันนี้</span><b id="tOut">—</b><em id="tOutS"></em></div>
+      </div>
+      <div id="staffNote" class="note" hidden></div>
+    </div>
+
+    <button id="btnIn" class="big in" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+      <span><b>ลงเวลาเข้างาน</b><small id="inSub">สแกนใบหน้า + ตรวจ GPS</small></span>
+    </button>
+    <button id="btnOut" class="big out" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      <span><b>ลงเวลาออกงาน</b><small id="outSub">สแกนใบหน้า (ไม่ตรวจ GPS)</small></span>
+    </button>
+
+    <div class="card rules">
+      <h3>เงื่อนไขการลงเวลา</h3>
+      <ul>
+        <li><b>เข้างาน:</b> สแกนใบหน้า → ตรวจ GPS ต้องอยู่ภายใน <b id="rRadius">50</b> เมตรจากจุดกลางสำนักงาน (วัดเป็นเส้นตรง ไม่ใช่ระยะเดินตามถนน) → บันทึกเวลาจากเซิร์ฟเวอร์</li>
+        <li><b>ออกงาน:</b> สแกนใบหน้า → บันทึกเวลาจากเซิร์ฟเวอร์ ไม่จำกัดระยะทาง</li>
+        <li>เวลาทำงาน <span id="rHours">08:30–16:30</span> น. · เวลาที่บันทึกเป็นเวลาของเซิร์ฟเวอร์ ไม่ใช่นาฬิกาในมือถือ</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========== ประวัติ ========== -->
+  <section id="tab-history" class="tab">
+    <div class="card">
+      <div class="row">
+        <div><label for="histStaff">ชื่อเจ้าหน้าที่</label><select id="histStaff"></select></div>
+        <div><label for="histMonth">เดือน</label><select id="histMonth"></select></div>
+      </div>
+      <div class="btns"><button id="btnHist" class="btn primary">ดูประวัติ</button></div>
+    </div>
+    <div id="histOut"></div>
+  </section>
+
+  <!-- ========== ผู้ดูแล ========== -->
+  <section id="tab-admin" class="tab">
+    <div id="adminLogin" class="card">
+      <h3>เข้าสู่ระบบผู้ดูแล</h3>
+      <label for="pin">รหัสผ่านผู้ดูแล</label>
+      <input id="pin" type="password" autocomplete="current-password" inputmode="text">
+      <div id="loginErr" class="note bad" hidden></div>
+      <div class="btns"><button id="btnLogin" class="btn primary">เข้าสู่ระบบ</button></div>
+    </div>
+
+    <div id="adminPanel" hidden>
+      <div class="subnav no-print">
+        <button data-sub="daily" class="on">รายงานประจำวัน</button>
+        <button data-sub="monthly">รายงานประจำเดือน</button>
+        <button data-sub="staff">เจ้าหน้าที่ / ใบหน้า</button>
+        <button data-sub="leave">ลา / ไปราชการ</button>
+        <button data-sub="office">พิกัดสำนักงาน</button>
+        <button id="btnLogout">ออกจากระบบ</button>
+      </div>
+
+      <div id="sub-daily" class="sub on">
+        <div class="card no-print">
+          <div class="row">
+            <div><label for="dDate">วันที่</label><input id="dDate" type="date"></div>
+          </div>
+          <div class="btns">
+            <button id="btnDaily" class="btn primary">แสดงรายงาน</button>
+            <button id="btnDailyPrint" class="btn">พิมพ์</button>
+            <button id="btnDailyExport" class="btn">สร้างแผ่นงานใน Google Sheets</button>
+          </div>
+          <div id="dailyLink" class="small" hidden></div>
+        </div>
+        <div id="dailyOut"></div>
+      </div>
+
+      <div id="sub-monthly" class="sub">
+        <div class="card no-print">
+          <label for="mMonth">เดือน</label><select id="mMonth"></select>
+          <div class="btns">
+            <button id="btnMonthly" class="btn primary">แสดงรายงาน</button>
+            <button id="btnMonthlyPrint" class="btn">พิมพ์</button>
+            <button id="btnMonthlyExport" class="btn">สร้างแผ่นงานใน Google Sheets</button>
+          </div>
+          <div id="monthlyLink" class="small" hidden></div>
+        </div>
+        <div id="monthlyOut"></div>
+      </div>
+
+      <div id="sub-staff" class="sub">
+        <div class="card">
+          <div class="row" style="align-items:center">
+            <h3 style="margin:0">รายชื่อเจ้าหน้าที่</h3>
+            <div style="text-align:right"><button id="btnAddStaff" class="btn primary sm">+ เพิ่มเจ้าหน้าที่</button></div>
+          </div>
+          <p class="small muted">ลงทะเบียนใบหน้าให้เจ้าหน้าที่ทุกคนต่อหน้าผู้ดูแล เจ้าหน้าที่ต้องยินยอมก่อน (PDPA)</p>
+          <div id="staffList"><span class="spin"></span></div>
+        </div>
+      </div>
+
+      <div id="sub-leave" class="sub">
+        <div class="card">
+          <h3>บันทึกลา / ไปราชการ</h3>
+          <label for="lvStaff">เจ้าหน้าที่</label><select id="lvStaff"></select>
+          <div class="row">
+            <div><label for="lvFrom">ตั้งแต่วันที่</label><input id="lvFrom" type="date"></div>
+            <div><label for="lvTo">ถึงวันที่</label><input id="lvTo" type="date"></div>
+          </div>
+          <label for="lvType">ประเภท</label><select id="lvType"></select>
+          <label for="lvNote">รายละเอียด (เช่น ชื่อการประชุม/อบรม)</label><input id="lvNote" type="text" maxlength="200">
+          <p class="small muted">หากเลือกหลายวัน ระบบจะบันทึกเฉพาะวันทำการ (เว้นเสาร์–อาทิตย์และวันหยุดในแผ่นงาน "วันหยุด")</p>
+          <div class="btns"><button id="btnLeave" class="btn primary">บันทึก</button></div>
+          <div id="lvMsg"></div>
+        </div>
+      </div>
+
+      <div id="sub-office" class="sub">
+        <div class="card">
+          <h3>พิกัดจุดกลางสำนักงาน</h3>
+          <p class="small muted">ระบบใช้พิกัดกลางเพียงจุดเดียว ระยะลงเวลาเข้างานวัดเป็นเส้นตรงจากจุดนี้ ให้ไปยืนที่กลางอาคารสำนักงานแล้วกด "ใช้ตำแหน่งปัจจุบัน" หรือคัดลอกพิกัดจาก Google Maps มาวาง</p>
+          <div id="officeNow" class="note info"></div>
+          <div class="btns"><button id="btnHere" class="btn">ใช้ตำแหน่งปัจจุบันของฉัน</button></div>
+          <div class="row">
+            <div><label for="oLat">ละติจูด</label><input id="oLat" type="text" inputmode="decimal" placeholder="เช่น 17.123456"></div>
+            <div><label for="oLng">ลองจิจูด</label><input id="oLng" type="text" inputmode="decimal" placeholder="เช่น 103.123456"></div>
+            <div><label for="oRad">รัศมี (เมตร)</label><input id="oRad" type="number" min="10" max="1000" step="1"></div>
+          </div>
+          <div class="btns"><button id="btnSaveOffice" class="btn primary">บันทึกพิกัด</button></div>
+          <div id="officeMsg"></div>
+        </div>
+        <div class="card">
+          <h3>ทดสอบรัศมี</h3>
+          <p class="small muted">วัดระยะเส้นตรงจากตำแหน่งที่ท่านยืนอยู่ ถึงจุดกลางที่บันทึกไว้ ใช้เดินตรวจขอบเขต 50 เมตรรอบอาคาร</p>
+          <div class="btns"><button id="btnTestDist" class="btn">วัดระยะจากตำแหน่งนี้</button></div>
+          <div id="testOut"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- หน้าต่างสแกน -->
+<div id="scanner" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="scanTitle">
+  <div class="sheet">
+    <h2 id="scanTitle" class="c">ลงเวลาเข้างาน</h2>
+    <p id="scanWho" class="c muted" style="margin:2px 0 0"></p>
+    <div class="cam"><video id="video" playsinline muted autoplay></video><div id="ring" class="ring"></div></div>
+    <ol id="steps" class="steps"></ol>
+    <p id="scanMsg" class="scan-msg">กำลังเตรียม…</p>
+    <button id="scanCancel" class="btn ghost" style="width:100%">ยกเลิก</button>
+  </div>
+</div>
+
+<!-- หน้าต่างผลลัพธ์ -->
+<div id="result" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="resTitle">
+  <div class="sheet result">
+    <div id="resIcon" class="res-icon"></div>
+    <h2 id="resTitle"></h2>
+    <div id="resBody" class="body"></div>
+    <button id="resOk" class="btn primary" style="width:100%">ตกลง</button>
+  </div>
+</div>
+
+<!-- หน้าต่างฟอร์มทั่วไป -->
+<div id="modal" class="overlay" hidden role="dialog" aria-modal="true">
+  <div class="sheet" id="modalBody"></div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+ * ตั้งค่า: วาง URL ของเว็บแอป Apps Script (ลงท้ายด้วย /exec) ที่ได้จากขั้นตอน Deploy
+ * ===================================================================== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyQGly0OFe7MTOr18REDGWPPIni74E15kkVwzVtZN36s9bltM1JxL4GcGBBwmsWbNaQ/exec';
+
+const FACE_CDN = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15';
+
+/* ---------- เครื่องมือ ---------- */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const mkStore = kind => ({
+  get(k) { try { return window[kind].getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { window[kind].setItem(k, v); } catch (e) { /* ignore */ } },
+  del(k) { try { window[kind].removeItem(k); } catch (e) { /* ignore */ } },
+});
+const store = mkStore('localStorage');
+const sess = mkStore('sessionStorage');
+const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const ICONS = {
+  ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  bad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/></svg>',
+};
+
+const S = {
+  cfg: null, offset: 0, lastInit: 0, busy: false, token: null, stream: null,
+  staffId: store.get('sa.staffId') || '',
+  pin: sess.get('sa.pin') || '',
+  admin: null,
+};
+
+/* ---------- เชื่อมต่อเซิร์ฟเวอร์ ---------- */
+function apiReady() { return /^https:\/\/script\.google\.com\/.+\/exec$/.test(API_URL) && API_URL.indexOf('วาง_') < 0; }
+
+async function api(action, payload) {
+  if (!apiReady()) throw new Error('ยังไม่ได้ตั้งค่า API_URL ในไฟล์ index.html');
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, payload: payload || {} }),
+    });
+  } catch (e) {
+    throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ตรวจสอบอินเทอร์เน็ต หรือการ Deploy เว็บแอปให้ "ทุกคน (Anyone)" เข้าถึงได้');
+  }
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch (e) {
+    throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง — ตรวจสอบ API_URL และการ Deploy แบบ "Anyone"');
+  }
+  if (!data.ok) { const err = new Error(data.error || 'เกิดข้อผิดพลาด'); err.code = data.code; throw err; }
+  return data.data;
+}
+
+async function adminApi(action, payload) {
+  try {
+    return await api(action, Object.assign({}, payload, { pin: S.pin }));
+  } catch (e) {
+    if (e.code === 'BAD_PIN' || e.code === 'LOCKED') adminLogout(e.message);
+    throw e;
+  }
+}
+
+/* ---------- เริ่มต้น ---------- */
+async function boot() {
+  bindUI();
+  setInterval(tick, 1000); tick();
+  if (!apiReady()) {
+    showBanner('bad', 'ยังไม่ได้ตั้งค่า <b>API_URL</b> ในไฟล์ index.html — ดูขั้นตอนในคู่มือติดตั้ง');
+    return;
+  }
+  await refreshInit(true);
+}
+
+async function refreshInit(first) {
+  try {
+    const t0 = Date.now();
+    const cfg = await api('init');
+    S.cfg = cfg;
+    S.offset = cfg.serverTime - Math.round((t0 + Date.now()) / 2);
+    S.lastInit = Date.now();
+    hideBanner();
+    renderAll();
+    if (first) setTimeout(() => { if (staffById(S.staffId)) loadFace().catch(() => {}); }, 1500);
+  } catch (e) {
+    showBanner('bad', esc(e.message) + ' <button class="btn sm" onclick="refreshInit()">ลองใหม่</button>');
+  }
+}
+
+function renderAll() {
+  const c = S.cfg;
+  $('#officeName').textContent = c.officeName;
+  $('#affil').textContent = 'สังกัด' + c.affiliation;
+  document.title = 'ลงเวลาปฏิบัติงาน · ' + c.officeName;
+  $('#rRadius').textContent = c.office.radius;
+  $('#rHours').textContent = c.workStart + '–' + c.workEnd;
+  const opts = '<option value="">— เลือกชื่อของท่าน —</option>' +
+    c.staff.map(s => `<option value="${esc(s.id)}">${esc(s.name)}${s.position ? ' · ' + esc(s.position) : ''}</option>`).join('');
+  $('#staffSel').innerHTML = opts;
+  $('#histStaff').innerHTML = opts;
+  if (!staffById(S.staffId)) S.staffId = '';
+  $('#staffSel').value = S.staffId;
+  $('#histStaff').value = S.staffId;
+  fillMonths($('#histMonth'));
+  fillMonths($('#mMonth'));
+  if (!$('#dDate').value) $('#dDate').value = c.today;
+  if (!$('#lvFrom').value) { $('#lvFrom').value = c.today; $('#lvTo').value = c.today; }
+  renderToday();
+  renderOffice();
+}
+
+function staffById(id) { return S.cfg && S.cfg.staff.find(s => s.id === id); }
+
+function renderToday() {
+  const st = staffById(S.staffId);
+  const t = (S.cfg && st && S.cfg.todayStatus[st.id]) || {};
+  $('#tIn').textContent = t.in ? t.in.slice(0, 5) : '—';
+  $('#tOut').textContent = t.out ? t.out.slice(0, 5) : '—';
+  $('#tInS').innerHTML = t.inStatus ? statusTag(t.inStatus) : '';
+  $('#tOutS').innerHTML = t.outStatus ? statusTag(t.outStatus) : '';
+  const note = $('#staffNote');
+  note.hidden = true;
+  if (st && !st.enrolled) {
+    note.className = 'note warn'; note.hidden = false;
+    note.textContent = 'ยังไม่ได้ลงทะเบียนใบหน้า — กรุณาติดต่อผู้ดูแลเพื่อลงทะเบียนก่อนใช้งาน';
+  } else if (t.leave) {
+    note.className = 'note info'; note.hidden = false;
+    note.textContent = 'วันนี้มีบันทึก: ' + t.leave;
+  } else if (S.cfg && S.cfg.office.lat == null) {
+    note.className = 'note warn'; note.hidden = false;
+    note.textContent = 'ผู้ดูแลยังไม่ได้กำหนดพิกัดสำนักงาน — ยังลงเวลาเข้างานไม่ได้';
+  }
+  const can = !!(st && st.enrolled);
+  $('#btnIn').disabled = !can;
+  $('#btnOut').disabled = !can;
+  $('#inSub').textContent = t.in ? 'ลงเวลาแล้ว ' + t.in.slice(0, 5) + ' น.' : `สแกนใบหน้า + ตรวจ GPS (ไม่เกิน ${S.cfg ? S.cfg.office.radius : 50} ม.)`;
+  $('#outSub').textContent = t.out ? 'ลงเวลาแล้ว ' + t.out.slice(0, 5) + ' น.' : 'สแกนใบหน้า (ไม่ตรวจ GPS)';
+}
+
+function statusTag(s) {
+  const cls = s === 'สาย' || s === 'กลับก่อนเวลา' ? 'warn' : s === 'ตรงเวลา' || s === 'ปกติ' ? 'ok' : 'info';
+  return `<span class="tag ${cls}">${esc(s)}</span>`;
+}
+
+function fillMonths(sel) {
+  if (!S.cfg || sel.options.length) return;
+  const [y, m] = S.cfg.today.split('-').map(Number);
+  let html = '';
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1));
+    const v = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+    html += `<option value="${v}">${TH_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear() + 543}</option>`;
+  }
+  sel.innerHTML = html;
+}
+
+/* ---------- นาฬิกา (ซิงก์กับเวลาเซิร์ฟเวอร์) ---------- */
+const fmtTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const fmtDate = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+function tick() {
+  const d = new Date(Date.now() + S.offset);
+  $('#clock').textContent = fmtTime.format(d);
+  $('#dateText').textContent = fmtDate.format(d);
+}
+
+/* ---------- UI ทั่วไป ---------- */
+function showBanner(kind, html) { const b = $('#banner'); b.innerHTML = `<div class="note ${kind}">${html}</div>`; b.hidden = false; }
+function hideBanner() { $('#banner').hidden = true; }
+let toastTimer = null;
+function toast(msg) {
+  let t = $('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
+}
+function openOverlay(sel) { $(sel).hidden = false; document.body.classList.add('lock'); }
+function closeOverlay(sel) {
+  $(sel).hidden = true;
+  if (!$$('.overlay').some(o => !o.hidden)) document.body.classList.remove('lock');
+}
+function showResult(kind, title, html) {
+  $('#resIcon').className = 'res-icon ' + kind;
+  $('#resIcon').innerHTML = ICONS[kind] || '';
+  $('#resTitle').textContent = title;
+  $('#resBody').innerHTML = html || '';
+  openOverlay('#result');
+  $('#resOk').focus();
+}
+function loadingHtml(t) { return `<div class="card"><span class="spin"></span> ${esc(t || 'กำลังโหลด…')}</div>`; }
+function errHtml(e) { return `<div class="note bad">${esc(e.message || e)}</div>`; }
+async function withBusy(btn, fn) {
+  if (btn.disabled) return;
+  const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span> ' + old;
+  try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = old; }
+}
+
+/* ---------- ระยะทาง (Haversine) — ใช้แสดงผลเท่านั้น เซิร์ฟเวอร์คำนวณซ้ำเพื่อตัดสิน ---------- */
+function distM(lat1, lng1, lat2, lng2) {
+  const R = 6371000, r = x => x * Math.PI / 180;
+  const a = Math.sin(r(lat2 - lat1) / 2) ** 2 + Math.cos(r(lat1)) * Math.cos(r(lat2)) * Math.sin(r(lng2 - lng1) / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/* ---------- GPS ---------- */
+function getPosition(opt) {
+  const { tok, maxWait = 15000, goodAcc = 20, onUpdate } = opt || {};
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('อุปกรณ์นี้ไม่รองรับการระบุตำแหน่ง'));
+    let best = null, done = false, watchId = null, timer = null, poll = null;
+    const finish = err => {
+      if (done) return; done = true;
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timer); clearInterval(poll);
+      if (tok && tok.cancelled) return reject(cancelErr());
+      if (best && !err) resolve(best);
+      else reject(err || new Error('ระบุตำแหน่งไม่สำเร็จ — เปิด GPS (ตำแหน่งที่ตั้ง) ของโทรศัพท์ แล้วลองใหม่'));
+    };
+    watchId = navigator.geolocation.watchPosition(p => {
+      const c = p.coords;
+      const cur = { lat: c.latitude, lng: c.longitude, accuracy: c.accuracy };
+      if (!best || cur.accuracy < best.accuracy) best = cur;
+      if (onUpdate) onUpdate(best);
+      if (cur.accuracy <= goodAcc) finish();
+    }, e => {
+      if (e.code === 1) finish(new Error('ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง — กดอนุญาต "ตำแหน่งที่ตั้ง" ให้เว็บไซต์นี้ในการตั้งค่าเบราว์เซอร์ แล้วลองใหม่'));
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: maxWait });
+    timer = setTimeout(() => finish(), maxWait);
+    if (tok) poll = setInterval(() => { if (tok.cancelled) finish(); }, 300);
+  });
+}
+
+/* ---------- กล้อง + จดจำใบหน้า (face-api.js) ---------- */
+let facePromise = null;
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.async = true; s.crossOrigin = 'anonymous';
+    s.onload = res; s.onerror = () => rej(new Error('โหลดระบบจดจำใบหน้าไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต'));
+    document.head.appendChild(s);
+  });
+}
+function loadFace() {
+  if (facePromise) return facePromise;
+  facePromise = (async () => {
+    if (!window.faceapi) await loadScript(FACE_CDN + '/dist/face-api.js');
+    if (faceapi.tf && faceapi.tf.ready) await faceapi.tf.ready();
+    const uri = FACE_CDN + '/model';
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(uri),
+      faceapi.nets.faceLandmark68Net.loadFromUri(uri),
+      faceapi.nets.faceRecognitionNet.loadFromUri(uri),
+    ]);
+  })();
+  facePromise.catch(() => { facePromise = null; });
+  return facePromise;
+}
+
+function camErr(e) {
+  const n = e && e.name;
+  if (n === 'NotAllowedError' || n === 'SecurityError') return 'ไม่ได้รับอนุญาตให้ใช้กล้อง — กดอนุญาตกล้องให้เว็บไซต์นี้ในการตั้งค่าเบราว์เซอร์ แล้วลองใหม่';
+  if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'ไม่พบกล้องหน้าในอุปกรณ์นี้';
+  if (n === 'NotReadableError') return 'กล้องถูกใช้งานโดยแอปอื่นอยู่ กรุณาปิดแอปนั้นแล้วลองใหม่';
+  return 'เปิดกล้องไม่สำเร็จ: ' + (e && e.message ? e.message : e);
+}
+
+async function startCamera(video) {
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error('เบราว์เซอร์นี้ใช้กล้องไม่ได้ — กรุณาเปิดลิงก์ด้วย Chrome หรือ Safari (หากเปิดจาก LINE ให้กด "เปิดในเบราว์เซอร์")');
+  }
+  stopCamera();
+  try {
+    S.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+  } catch (e) { throw new Error(camErr(e)); }
+  video.srcObject = S.stream;
+  try { await video.play(); } catch (e) { /* autoplay อาจถูกบล็อกชั่วคราว */ }
+  for (let i = 0; i < 60 && !(video.videoWidth && video.readyState >= 2); i++) await sleep(50);
+}
+
+function stopCamera() {
+  if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  const v = $('#video'); if (v) v.srcObject = null;
+}
+
+function snapshot(video) {
+  const w = 320, h = Math.round(video.videoHeight * w / video.videoWidth) || 240;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  c.getContext('2d').drawImage(video, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.7).split(',')[1];
+}
+
+function cancelErr() { const e = new Error('ยกเลิกแล้ว'); e.cancelled = true; return e; }
+function checkTok(tok) { if (tok.cancelled) throw cancelErr(); }
+
+/** สแกนใบหน้า: เก็บค่าลักษณะใบหน้า (descriptor 128 ค่า) จากหลายเฟรมที่มีใบหน้าเดียวชัดเจน */
+async function scanFace(tok, opt) {
+  const { samples = 3, gap = 150, timeout = 30000, hint } = opt || {};
+  scanMsg('กำลังโหลดระบบจดจำใบหน้า… (ครั้งแรกอาจใช้เวลา 10–30 วินาที)');
+  await loadFace(); checkTok(tok);
+  scanMsg('กำลังเปิดกล้อง…');
+  const video = $('#video');
+  await startCamera(video); checkTok(tok);
+  const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+  const ring = $('#ring');
+  const out = []; let photo = '';
+  const t0 = Date.now();
+  scanMsg(hint || 'มองตรงที่กล้อง ให้ใบหน้าอยู่ในกรอบวงรี');
+  while (out.length < samples) {
+    checkTok(tok);
+    if (Date.now() - t0 > timeout) throw new Error('สแกนใบหน้าไม่สำเร็จภายในเวลาที่กำหนด — ถอดหน้ากาก/แว่นกันแดด อยู่ในที่มีแสงสว่างพอ แล้วลองใหม่');
+    const dets = await faceapi.detectAllFaces(video, opts).withFaceLandmarks().withFaceDescriptors();
+    checkTok(tok);
+    if (!dets.length) {
+      ring.className = 'ring'; scanMsg('ไม่พบใบหน้า — จัดใบหน้าให้อยู่ในกรอบ');
+    } else if (dets.length > 1) {
+      ring.className = 'ring bad'; out.length = 0; scanMsg('พบมากกว่า 1 ใบหน้า — กรุณาสแกนทีละคน');
+    } else {
+      const d = dets[0], box = d.detection.box;
+      if (box.width < video.videoWidth * 0.2) { ring.className = 'ring'; scanMsg('ขยับเข้าใกล้กล้องอีกนิด'); }
+      else if (d.detection.score < 0.6) { ring.className = 'ring'; scanMsg('ภาพไม่ชัด — หันหน้าตรงและเพิ่มแสงสว่าง'); }
+      else {
+        out.push(Array.from(d.descriptor, v => Math.round(v * 1e5) / 1e5));
+        if (!photo || out.length === Math.ceil(samples / 2)) photo = snapshot(video);
+        ring.className = 'ring ok';
+        scanMsg(`กำลังสแกน… ${out.length}/${samples}`);
+      }
+    }
+    await sleep(gap);
+  }
+  stopCamera();
+  return { descriptors: out, photo };
+}
+
+function setSteps(list) { $('#steps').innerHTML = list.map(s => `<li data-k="${s[0]}">${esc(s[1])}</li>`).join(''); }
+function step(k, state) { const li = $(`#steps li[data-k="${k}"]`); if (li) li.className = state; }
+function scanMsg(t) { $('#scanMsg').textContent = t; }
+
+function openScanner(title, who, steps) {
+  S.token = { cancelled: false };
+  $('#scanTitle').textContent = title;
+  $('#scanWho').textContent = who || '';
+  $('#ring').className = 'ring';
+  $('#scanCancel').hidden = false;
+  setSteps(steps);
+  openOverlay('#scanner');
+  return S.token;
+}
+
+/* ---------- ลงเวลาเข้า/ออก ---------- */
+async function clockFlow(kind) {
+  if (S.busy || !S.cfg) return;
+  const st = staffById(S.staffId);
+  if (!st) { toast('กรุณาเลือกชื่อของท่านก่อน'); $('#staffSel').focus(); return; }
+  const t = S.cfg.todayStatus[st.id] || {};
+  const off = S.cfg.office;
+  if (!st.enrolled) return showResult('bad', 'ยังไม่ได้ลงทะเบียนใบหน้า', `<p>${esc(st.name)} ยังไม่มีข้อมูลใบหน้าในระบบ กรุณาติดต่อผู้ดูแลเพื่อลงทะเบียนก่อนใช้งาน</p>`);
+  if (kind === 'in' && t.in) return showResult('warn', 'ลงเวลาเข้างานแล้ว', `<p>วันนี้ลงเวลาเข้างานเมื่อ <b>${esc(t.in)} น.</b></p>`);
+  if (kind === 'out' && t.out) return showResult('warn', 'ลงเวลาออกงานแล้ว', `<p>วันนี้ลงเวลาออกงานเมื่อ <b>${esc(t.out)} น.</b></p>`);
+  if (kind === 'in' && (off.lat == null || off.lng == null)) return showResult('bad', 'ยังไม่ได้กำหนดพิกัดสำนักงาน', '<p>ผู้ดูแลต้องตั้งค่าพิกัดจุดกลางสำนักงานก่อน (เมนู ผู้ดูแล › พิกัดสำนักงาน)</p>');
+  if (kind === 'out' && !t.in && !confirm('วันนี้ยังไม่มีเวลาเข้างานในระบบ ต้องการลงเวลาออกงานต่อหรือไม่?')) return;
+
+  S.busy = true;
+  const tok = openScanner(kind === 'in' ? 'ลงเวลาเข้างาน' : 'ลงเวลาออกงาน', st.name,
+    kind === 'in' ? [['face', '1 สแกนใบหน้า'], ['gps', '2 ตรวจ GPS'], ['save', '3 บันทึกเวลา']]
+                  : [['face', '1 สแกนใบหน้า'], ['save', '2 บันทึกเวลา']]);
+  try {
+    step('face', 'active');
+    const face = await scanFace(tok, { samples: 3 });
+    step('face', 'done');
+
+    let pos = null;
+    if (kind === 'in') {
+      step('gps', 'active');
+      scanMsg('กำลังหาตำแหน่ง GPS… (ถ้าอยู่ในอาคาร ให้เข้าใกล้หน้าต่าง)');
+      pos = await getPosition({
+        tok, maxWait: 15000, goodAcc: 20,
+        onUpdate: p => scanMsg(`ห่างจุดกลางสำนักงานประมาณ ${Math.round(distM(p.lat, p.lng, off.lat, off.lng))} ม. (คลาดเคลื่อน ±${Math.round(p.accuracy)} ม.)`),
+      });
+      step('gps', 'done');
+    }
+
+    step('save', 'active');
+    $('#scanCancel').hidden = true;
+    scanMsg('กำลังตรวจสอบกับเซิร์ฟเวอร์และบันทึกเวลา…');
+    const payload = { staffId: st.id, descriptors: face.descriptors, photo: S.cfg.savePhoto ? face.photo : '' };
+    if (pos) Object.assign(payload, { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy });
+    const r = await api(kind === 'in' ? 'checkIn' : 'checkOut', payload);
+    step('save', 'done');
+
+    S.cfg.todayStatus[st.id] = Object.assign({}, S.cfg.todayStatus[st.id],
+      kind === 'in' ? { in: r.time, inStatus: r.status } : { out: r.time, outStatus: r.status });
+    renderToday();
+    closeOverlay('#scanner');
+    const rows = [
+      ['ชื่อ', esc(r.name)],
+      ['วันที่', esc(r.dateThai)],
+      [kind === 'in' ? 'เวลาเข้างาน' : 'เวลาออกงาน', `<b>${esc(r.time)} น.</b> ${statusTag(r.status)}`],
+    ];
+    if (kind === 'in') rows.push(['ระยะจากสำนักงาน', `${r.distance} ม. (กำหนด ≤ ${r.radius} ม.)`]);
+    showResult('ok', kind === 'in' ? 'ลงเวลาเข้างานสำเร็จ' : 'ลงเวลาออกงานสำเร็จ',
+      `<div class="kv">${rows.map(x => `<span>${x[0]}</span><div>${x[1]}</div>`).join('')}</div>`);
+  } catch (e) {
+    closeOverlay('#scanner');
+    if (!e.cancelled) showResult('bad', 'ลงเวลาไม่สำเร็จ', `<p>${esc(e.message)}</p>`);
+  } finally {
+    stopCamera();
+    S.busy = false;
+  }
+}
+
+/* ---------- ประวัติ ---------- */
+async function loadHistory() {
+  const id = $('#histStaff').value;
+  if (!id) { toast('กรุณาเลือกชื่อเจ้าหน้าที่'); return; }
+  const out = $('#histOut');
+  out.innerHTML = loadingHtml();
+  try {
+    const r = await api('history', { staffId: id, month: $('#histMonth').value });
+    const s = r.summary;
+    out.innerHTML = `<div class="card">
+      <h3>${esc(r.staff.name)} · ${esc(r.monthThai)}</h3>
+      <div class="stats">
+        <div><b>${s.present}</b><span>วันที่มาทำงาน</span></div>
+        <div><b>${s.late}</b><span>มาสาย</span></div>
+        <div><b>${s.early}</b><span>กลับก่อนเวลา</span></div>
+        <div><b>${s.leave}</b><span>ลา</span></div>
+        <div><b>${s.travel}</b><span>ไปราชการ</span></div>
+      </div>
+      ${r.rows.length ? `<div class="tbl-wrap"><table>
+        <thead><tr><th>วันที่</th><th class="num">เข้า</th><th class="num">ออก</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>${r.rows.map(x => `<tr>
+          <td>${esc(x.day)} ${esc(x.dateThai)}</td>
+          <td class="num">${x.in ? esc(x.in.slice(0, 5)) : '—'}</td>
+          <td class="num">${x.out ? esc(x.out.slice(0, 5)) : '—'}</td>
+          <td>${[x.leave ? `<span class="tag info">${esc(x.leave)}</span>` : '',
+                 x.inStatus === 'สาย' ? statusTag('สาย') : '',
+                 x.outStatus === 'กลับก่อนเวลา' ? statusTag('กลับก่อนเวลา') : '',
+                 x.noOut ? '<span class="tag bad">ไม่ได้ลงเวลาออก</span>' : '',
+                 x.note ? esc(x.note) : ''].filter(Boolean).join(' ')}</td></tr>`).join('')}
+        </tbody></table></div>` : '<p class="muted">ไม่มีรายการในเดือนนี้</p>'}
+    </div>`;
+  } catch (e) { out.innerHTML = errHtml(e); }
+}
+
+/* ---------- ผู้ดูแล ---------- */
+async function adminLogin() {
+  const pin = $('#pin').value.trim();
+  if (!pin) return;
+  $('#loginErr').hidden = true;
+  await withBusy($('#btnLogin'), async () => {
+    try {
+      await api('adminLogin', { pin });
+      S.pin = pin; sess.set('sa.pin', pin);
+      $('#pin').value = '';
+      showAdmin();
+    } catch (e) {
+      $('#loginErr').textContent = e.message; $('#loginErr').hidden = false;
+    }
+  });
+}
+
+function adminLogout(msg) {
+  S.pin = ''; sess.del('sa.pin'); S.admin = null;
+  $('#adminPanel').hidden = true; $('#adminLogin').hidden = false;
+  if (msg) { $('#loginErr').textContent = msg; $('#loginErr').hidden = false; }
+}
+
+function showAdmin() {
+  $('#adminLogin').hidden = true; $('#adminPanel').hidden = false;
+  const cur = $('.subnav button.on');
+  openSub(cur ? cur.dataset.sub : 'daily');
+}
+
+function openSub(name) {
+  $$('.subnav button[data-sub]').forEach(b => b.classList.toggle('on', b.dataset.sub === name));
+  $$('.sub').forEach(s => s.classList.toggle('on', s.id === 'sub-' + name));
+  if (name === 'daily' && !$('#dailyOut').innerHTML) loadDaily();
+  if (name === 'monthly' && !$('#monthlyOut').innerHTML) loadMonthly();
+  if (name === 'staff' || name === 'leave') loadStaffAdmin();
+  if (name === 'office') renderOffice();
+}
+
+/* รายงานประจำวัน */
+async function loadDaily() {
+  const out = $('#dailyOut');
+  out.innerHTML = loadingHtml();
+  try { out.innerHTML = dailyHtml(await adminApi('reportDaily', { date: $('#dDate').value })); }
+  catch (e) { out.innerHTML = errHtml(e); }
+}
+
+function dailyHtml(r) {
+  const sm = r.summary;
+  const cnt = t => (sm.byType.find(b => b.type === t) || { count: 0 }).count;
+  const rows = r.rows.map(x => `<tr>
+      <td class="num">${x.no}</td><td>${esc(x.name)}</td><td>${esc(x.position)}</td>
+      <td class="num">${x.in ? 'สแกน ✓' : ''}</td><td class="num">${esc(x.in)}</td>
+      <td class="num">${x.out ? 'สแกน ✓' : ''}</td><td class="num">${esc(x.out)}</td>
+      <td>${esc(x.note)}${x.photoIn ? ` <a class="no-print small" href="${esc(x.photoIn)}" target="_blank" rel="noopener">ภาพเข้า</a>` : ''}${x.photoOut ? ` <a class="no-print small" href="${esc(x.photoOut)}" target="_blank" rel="noopener">ภาพออก</a>` : ''}</td></tr>`);
+  for (let i = r.rows.length; i < 12; i++) rows.push(`<tr><td class="num">${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`);
+  const failed = r.failed.length ? `<div class="card no-print"><h3>การสแกนที่ไม่สำเร็จ (${r.failed.length})</h3>
+      <div class="tbl-wrap"><table><thead><tr><th>เวลา</th><th>ชื่อ</th><th>รายการ</th><th>เหตุผล</th></tr></thead>
+      <tbody>${r.failed.map(f => `<tr><td>${esc(f.time)}</td><td>${esc(f.name)}</td><td>${esc(f.action)}</td><td>${esc(f.reason)}</td></tr>`).join('')}</tbody></table></div></div>` : '';
+  return `<div class="card paper">
+    <div class="h"><b>บัญชีลงเวลาปฏิบัติราชการของเจ้าหน้าที่</b>
+      <div>${esc(r.dateThai)}${r.holiday ? ' · ' + esc(r.holiday) : (!r.workday ? ' · วันหยุด' : '')}</div>
+      <div>${esc(r.office.name)}   ${esc(r.office.address)}</div></div>
+    <div class="tbl-wrap"><table class="form">
+      <thead><tr><th>ลำดับ</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>ยืนยันตัวตน</th><th>เวลามา</th><th>ยืนยันตัวตน</th><th>เวลากลับ</th><th>หมายเหตุ</th></tr></thead>
+      <tbody>${rows.join('')}</tbody></table></div>
+    <div class="sumgrid">
+      <div>ข้าราชการทั้งหมด <b>${cnt('ข้าราชการ')}</b> คน</div><div>มาปฏิบัติราชการ <b>${sm.present}</b> คน</div>
+      <div>ลูกจ้างชั่วคราว/นักเรียนทุน <b>${cnt('ลูกจ้างชั่วคราว/นักเรียนทุน')}</b> คน</div><div>ลา <b>${sm.leave}</b> คน</div>
+      <div>พนักงานจ้างเหมาบริการ <b>${cnt('พนักงานจ้างเหมาบริการ')}</b> คน</div><div>มาสาย <b>${sm.late}</b> คน</div>
+      <div>ผู้ช่วยเหลือคนไข้ <b>${cnt('ผู้ช่วยเหลือคนไข้')}</b> คน</div><div>ไปราชการ <b>${sm.travel}</b> คน (ประชุม, อบรม, ศึกษาดูงาน)</div>
+    </div>
+    <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
+    <p class="small muted" style="margin-top:14px">ข้อมูลจากระบบลงเวลาออนไลน์ — เข้างานยืนยันด้วยใบหน้าและ GPS ภายในรัศมี ${r.office.radius} ม. · ออกงานยืนยันด้วยใบหน้า · เวลาจากเซิร์ฟเวอร์</p>
+  </div>${failed}`;
+}
+
+/* รายงานประจำเดือน */
+async function loadMonthly() {
+  const out = $('#monthlyOut');
+  out.innerHTML = loadingHtml();
+  try {
+    const r = await adminApi('reportMonthly', { month: $('#mMonth').value });
+    out.innerHTML = `<div class="card paper">
+      <div class="h"><b>สรุปการลงเวลาปฏิบัติราชการ ประจำเดือน ${esc(r.monthThai)}</b>
+        <div>${esc(r.office.name)}   ${esc(r.office.address)}</div>
+        <div class="small muted">วันทำการในเดือน ${r.workdaysTotal} วัน (นับถึงวันนี้ ${r.workdays} วัน)</div></div>
+      <div class="tbl-wrap"><table class="form">
+        <thead><tr><th>ลำดับ</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>มาปฏิบัติงาน (วัน)</th><th>มาสาย</th><th>กลับก่อนเวลา</th><th>ไม่ลงเวลาออก</th><th>ลา (วัน)</th><th>ไปราชการ (วัน)</th><th>ไม่ได้ลงเวลา (วัน)</th></tr></thead>
+        <tbody>${r.rows.map(x => `<tr><td class="num">${x.no}</td><td>${esc(x.name)}</td><td>${esc(x.position)}</td>
+          <td class="num">${x.present}</td><td class="num">${x.late}</td><td class="num">${x.early}</td><td class="num">${x.noOut}</td>
+          <td class="num">${x.leave}</td><td class="num">${x.travel}</td><td class="num">${x.absent}</td></tr>`).join('')}</tbody></table></div>
+      <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
+    </div>`;
+  } catch (e) { out.innerHTML = errHtml(e); }
+}
+
+async function exportSheet(btn, action, payload, linkSel) {
+  await withBusy(btn, async () => {
+    const box = $(linkSel);
+    try {
+      const r = await adminApi(action, payload);
+      box.innerHTML = `✓ สร้างแผ่นงาน "${esc(r.sheet)}" แล้ว — <a href="${esc(r.url)}" target="_blank" rel="noopener">เปิดใน Google Sheets</a> (ไฟล์ › พิมพ์ หรือ ดาวน์โหลดเป็น PDF/Excel)`;
+    } catch (e) { box.innerHTML = errHtml(e); }
+    box.hidden = false;
+  });
+}
+
+/* เจ้าหน้าที่ + ลงทะเบียนใบหน้า */
+async function loadStaffAdmin() {
+  const list = $('#staffList');
+  try {
+    S.admin = await adminApi('staffList');
+    const a = S.admin;
+    list.innerHTML = a.staff.length ? a.staff.map(s => `<div class="staff-item">
+        <div class="who"><b>${esc(s.name)}</b>
+          <span class="small muted">${esc(s.id)} · ${esc(s.position || '-')} · ${esc(s.type)}</span><br>
+          ${s.enrolled ? `<span class="tag ok">ลงทะเบียนใบหน้าแล้ว</span>` : '<span class="tag warn">ยังไม่ลงทะเบียนใบหน้า</span>'}
+          ${s.active ? '' : '<span class="tag gray">ระงับ</span>'}</div>
+        <div class="acts">
+          <button class="btn sm" data-edit="${esc(s.id)}">แก้ไข</button>
+          <button class="btn sm primary" data-enroll="${esc(s.id)}">สแกนใบหน้า</button>
+        </div></div>`).join('') : '<p class="muted">ยังไม่มีรายชื่อ กด "+ เพิ่มเจ้าหน้าที่"</p>';
+    $('#lvStaff').innerHTML = a.staff.filter(s => s.active).map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+    $('#lvType').innerHTML = a.leaveTypes.map(t => `<option>${esc(t)}</option>`).join('') + '<option value="">— ล้างรายการลา/ไปราชการ —</option>';
+  } catch (e) { list.innerHTML = errHtml(e); }
+}
+
+function staffForm(id) {
+  const a = S.admin; if (!a) return;
+  const s = a.staff.find(x => x.id === id) || { id: '', name: '', position: '', type: a.types[0], active: true, enrolled: false };
+  $('#modalBody').innerHTML = `<h2>${s.id ? 'แก้ไขข้อมูลเจ้าหน้าที่' : 'เพิ่มเจ้าหน้าที่'}</h2>
+    <label for="fName">ชื่อ - สกุล</label><input id="fName" type="text" value="${esc(s.name)}" maxlength="120">
+    <label for="fPos">ตำแหน่ง</label><input id="fPos" type="text" value="${esc(s.position)}" maxlength="120">
+    <label for="fType">ประเภทบุคลากร</label><select id="fType">${a.types.map(t => `<option ${t === s.type ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+    <label class="check"><input id="fActive" type="checkbox" ${s.active ? 'checked' : ''}> ใช้งานอยู่ (ไม่เลือก = ระงับ)</label>
+    ${s.enrolled ? `<p class="small muted">ลงทะเบียนใบหน้าเมื่อ ${esc(s.faceAt)}</p>` : ''}
+    <div id="fErr"></div>
+    <div class="btns">
+      <button id="fSave" class="btn primary">บันทึก</button>
+      <button id="fCancel" class="btn ghost">ยกเลิก</button>
+      ${s.enrolled ? '<button id="fDelFace" class="btn danger">ลบข้อมูลใบหน้า</button>' : ''}
+    </div>`;
+  openOverlay('#modal');
+  $('#fCancel').onclick = () => closeOverlay('#modal');
+  $('#fSave').onclick = () => withBusy($('#fSave'), async () => {
+    try {
+      await adminApi('staffSave', { id: s.id, name: $('#fName').value, position: $('#fPos').value, type: $('#fType').value, active: $('#fActive').checked });
+      closeOverlay('#modal'); toast('บันทึกแล้ว');
+      await loadStaffAdmin(); refreshInit();
+    } catch (e) { $('#fErr').innerHTML = errHtml(e); }
+  });
+  if (s.enrolled) $('#fDelFace').onclick = () => withBusy($('#fDelFace'), async () => {
+    if (!confirm('ลบข้อมูลใบหน้าของ ' + s.name + ' ? (ต้องลงทะเบียนใหม่จึงจะลงเวลาได้)')) return;
+    try {
+      await adminApi('faceDelete', { staffId: s.id });
+      closeOverlay('#modal'); toast('ลบข้อมูลใบหน้าแล้ว');
+      await loadStaffAdmin(); refreshInit();
+    } catch (e) { $('#fErr').innerHTML = errHtml(e); }
+  });
+}
+
+function enrollConsent(id) {
+  const s = S.admin && S.admin.staff.find(x => x.id === id); if (!s) return;
+  $('#modalBody').innerHTML = `<h2>ลงทะเบียนใบหน้า</h2>
+    <p><b>${esc(s.name)}</b>${s.enrolled ? ' <span class="tag warn">จะแทนที่ข้อมูลเดิม</span>' : ''}</p>
+    <div class="consent">
+      ข้อมูลใบหน้าเป็นข้อมูลชีวภาพ (ข้อมูลส่วนบุคคลที่มีความอ่อนไหว ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562)
+      ระบบจะเก็บเฉพาะ "ค่าลักษณะใบหน้า" ที่เป็นตัวเลข ไว้ใน Google Sheets ของหน่วยงาน เพื่อใช้ยืนยันตัวตนในการลงเวลาปฏิบัติงานเท่านั้น
+      ${S.cfg && S.cfg.savePhoto ? 'และเก็บภาพถ่ายขนาดเล็กขณะลงเวลาแต่ละครั้งไว้ใน Google Drive ของหน่วยงานเพื่อให้ผู้บริหารตรวจสอบย้อนหลัง' : ''}
+      เจ้าหน้าที่สามารถขอให้ลบข้อมูลได้ตลอดเวลา
+    </div>
+    <label class="check"><input id="cOk" type="checkbox"> ${esc(s.name)} ได้รับทราบและยินยอมให้เก็บและใช้ข้อมูลใบหน้าตามวัตถุประสงค์ข้างต้น</label>
+    <div class="btns"><button id="cGo" class="btn primary" disabled>เริ่มสแกน</button><button id="cCancel" class="btn ghost">ยกเลิก</button></div>`;
+  openOverlay('#modal');
+  $('#cOk').onchange = () => { $('#cGo').disabled = !$('#cOk').checked; };
+  $('#cCancel').onclick = () => closeOverlay('#modal');
+  $('#cGo').onclick = () => { closeOverlay('#modal'); enrollFlow(s); };
+}
+
+async function enrollFlow(s) {
+  if (S.busy) return;
+  S.busy = true;
+  const tok = openScanner('ลงทะเบียนใบหน้า', s.name, [['face', '1 สแกน 5 ภาพ'], ['save', '2 บันทึก']]);
+  try {
+    step('face', 'active');
+    const face = await scanFace(tok, { samples: 5, gap: 450, timeout: 45000, hint: 'มองกล้อง แล้วค่อย ๆ ขยับหน้าซ้าย–ขวาเล็กน้อย' });
+    step('face', 'done'); step('save', 'active');
+    $('#scanCancel').hidden = true;
+    scanMsg('กำลังบันทึก…');
+    const r = await adminApi('faceEnroll', { staffId: s.id, descriptors: face.descriptors, consent: true });
+    closeOverlay('#scanner');
+    showResult('ok', 'ลงทะเบียนใบหน้าสำเร็จ', `<p>${esc(r.name)} — บันทึก ${r.samples} ภาพ<br>สามารถลงเวลาได้ทันที</p>`);
+    await loadStaffAdmin(); refreshInit();
+  } catch (e) {
+    closeOverlay('#scanner');
+    if (!e.cancelled) showResult('bad', 'ลงทะเบียนไม่สำเร็จ', `<p>${esc(e.message)}</p>`);
+  } finally { stopCamera(); S.busy = false; }
+}
+
+/* ลา / ไปราชการ */
+async function saveLeave() {
+  await withBusy($('#btnLeave'), async () => {
+    const msg = $('#lvMsg');
+    try {
+      const r = await adminApi('leaveSave', {
+        staffId: $('#lvStaff').value, from: $('#lvFrom').value, to: $('#lvTo').value || $('#lvFrom').value,
+        type: $('#lvType').value, note: $('#lvNote').value,
+      });
+      msg.innerHTML = `<div class="note info">✓ ${esc(r.name)} · ${esc(r.type)} · ${r.days} วัน</div>`;
+      $('#dailyOut').innerHTML = ''; $('#monthlyOut').innerHTML = '';
+      refreshInit();
+    } catch (e) { msg.innerHTML = errHtml(e); }
+  });
+}
+
+/* พิกัดสำนักงาน */
+function renderOffice() {
+  if (!S.cfg) return;
+  const o = S.cfg.office;
+  $('#officeNow').innerHTML = o.lat == null
+    ? 'ยังไม่ได้กำหนดพิกัดสำนักงาน'
+    : `จุดกลางปัจจุบัน: <b>${o.lat.toFixed(6)}, ${o.lng.toFixed(6)}</b> · รัศมี <b>${o.radius}</b> ม. · <a href="https://www.google.com/maps/search/?api=1&query=${o.lat},${o.lng}" target="_blank" rel="noopener">ดูบนแผนที่</a>`;
+  if (!$('#oRad').value) $('#oRad').value = o.radius;
+}
+
+async function useHere() {
+  await withBusy($('#btnHere'), async () => {
+    const msg = $('#officeMsg');
+    msg.innerHTML = '<div class="note info">กำลังหาตำแหน่ง… กรุณายืนนิ่งที่จุดกลางสำนักงาน (ไม่เกิน 30 วินาที)</div>';
+    try {
+      const p = await getPosition({ maxWait: 30000, goodAcc: 8, onUpdate: b => { msg.innerHTML = `<div class="note info">กำลังหาตำแหน่ง… คลาดเคลื่อน ±${Math.round(b.accuracy)} ม.</div>`; } });
+      $('#oLat').value = p.lat.toFixed(6); $('#oLng').value = p.lng.toFixed(6);
+      msg.innerHTML = `<div class="note ${p.accuracy > 20 ? 'warn' : 'info'}">ได้พิกัดแล้ว (คลาดเคลื่อน ±${Math.round(p.accuracy)} ม.)${p.accuracy > 20 ? ' — ค่อนข้างคลาดเคลื่อน แนะนำให้ลองใหม่ใกล้หน้าต่าง หรือคัดลอกพิกัดจาก Google Maps' : ''} กด "บันทึกพิกัด" เพื่อยืนยัน</div>`;
+    } catch (e) { msg.innerHTML = errHtml(e); }
+  });
+}
+
+async function saveOffice() {
+  const msg = $('#officeMsg');
+  let lat = $('#oLat').value.trim(), lng = $('#oLng').value.trim();
+  const m = lat.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (m) { lat = m[1]; lng = m[2]; $('#oLat').value = lat; $('#oLng').value = lng; }
+  if (!lat || !lng) { msg.innerHTML = errHtml('กรุณากรอกละติจูดและลองจิจูด'); return; }
+  await withBusy($('#btnSaveOffice'), async () => {
+    try {
+      const r = await adminApi('officeSet', { lat, lng, radius: $('#oRad').value });
+      msg.innerHTML = `<div class="note info">✓ บันทึกพิกัด ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)} รัศมี ${r.radius} ม. แล้ว</div>`;
+      await refreshInit();
+    } catch (e) { msg.innerHTML = errHtml(e); }
+  });
+}
+
+async function testDistance() {
+  const out = $('#testOut');
+  const o = S.cfg && S.cfg.office;
+  if (!o || o.lat == null) { out.innerHTML = errHtml('ยังไม่ได้กำหนดพิกัดสำนักงาน'); return; }
+  await withBusy($('#btnTestDist'), async () => {
+    out.innerHTML = '<div class="note info">กำลังหาตำแหน่ง…</div>';
+    try {
+      const p = await getPosition({ maxWait: 15000, goodAcc: 15 });
+      const d = distM(p.lat, p.lng, o.lat, o.lng);
+      const inside = d <= o.radius;
+      out.innerHTML = `<div class="note ${inside ? 'info' : 'bad'}">
+        ตำแหน่งนี้ ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)} (±${Math.round(p.accuracy)} ม.)<br>
+        ห่างจากจุดกลางเป็นเส้นตรง <b>${d.toFixed(1)} ม.</b> → ${inside ? '✓ อยู่ในรัศมี ลงเวลาเข้างานได้' : '✗ อยู่นอกรัศมี ' + o.radius + ' ม. ลงเวลาเข้างานไม่ได้'}</div>`;
+    } catch (e) { out.innerHTML = errHtml(e); }
+  });
+}
+
+/* ---------- ผูกเหตุการณ์ ---------- */
+function openTab(name) {
+  $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  $$('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + name));
+  document.body.classList.toggle('wide', name === 'admin');
+  if (name === 'admin' && S.pin && S.cfg) showAdmin();
+  if (name === 'history' && S.cfg && $('#histStaff').value && !$('#histOut').innerHTML) loadHistory();
+}
+
+function bindUI() {
+  $$('.tabs button').forEach(b => b.addEventListener('click', () => openTab(b.dataset.tab)));
+  $('#staffSel').addEventListener('change', e => {
+    S.staffId = e.target.value; store.set('sa.staffId', S.staffId);
+    $('#histStaff').value = S.staffId; $('#histOut').innerHTML = '';
+    renderToday();
+    if (staffById(S.staffId)) loadFace().catch(() => {});
+  });
+  $('#btnIn').addEventListener('click', () => clockFlow('in'));
+  $('#btnOut').addEventListener('click', () => clockFlow('out'));
+  $('#scanCancel').addEventListener('click', () => { if (S.token) S.token.cancelled = true; stopCamera(); closeOverlay('#scanner'); });
+  $('#resOk').addEventListener('click', () => closeOverlay('#result'));
+  $('#btnHist').addEventListener('click', loadHistory);
+  $('#btnLogin').addEventListener('click', adminLogin);
+  $('#pin').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
+  $('#btnLogout').addEventListener('click', () => adminLogout());
+  $$('.subnav button[data-sub]').forEach(b => b.addEventListener('click', () => openSub(b.dataset.sub)));
+  $('#btnDaily').addEventListener('click', loadDaily);
+  $('#btnDailyPrint').addEventListener('click', () => window.print());
+  $('#btnDailyExport').addEventListener('click', e => exportSheet(e.currentTarget, 'exportDaily', { date: $('#dDate').value }, '#dailyLink'));
+  $('#btnMonthly').addEventListener('click', loadMonthly);
+  $('#btnMonthlyPrint').addEventListener('click', () => window.print());
+  $('#btnMonthlyExport').addEventListener('click', e => exportSheet(e.currentTarget, 'exportMonthly', { month: $('#mMonth').value }, '#monthlyLink'));
+  $('#btnAddStaff').addEventListener('click', () => staffForm(''));
+  $('#staffList').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.edit) staffForm(b.dataset.edit);
+    if (b.dataset.enroll) enrollConsent(b.dataset.enroll);
+  });
+  $('#lvFrom').addEventListener('change', () => { if (!$('#lvTo').value || $('#lvTo').value < $('#lvFrom').value) $('#lvTo').value = $('#lvFrom').value; });
+  $('#btnLeave').addEventListener('click', saveLeave);
+  $('#btnHere').addEventListener('click', useHere);
+  $('#btnSaveOffice').addEventListener('click', saveOffice);
+  $('#btnTestDist').addEventListener('click', testDistance);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && apiReady() && !S.busy && Date.now() - S.lastInit > 60000) refreshInit();
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
