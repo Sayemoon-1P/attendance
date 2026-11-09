@@ -14,6 +14,7 @@
   --bg:#f2f6f5; --card:#ffffff; --ink:#15212b; --muted:#5b6872; --line:#dde5e3;
   --brand:#0f766e; --brand-dark:#0b5c56; --brand-soft:#e2f2ef;
   --out:#b45309; --out-dark:#92400e; --out-soft:#fdf0df;
+  --ot:#4338ca; --ot-dark:#3730a3; --ot2:#7e22ce; --ot2-dark:#6b21a8; --ot-soft:#eef0ff;
   --ok:#15803d; --ok-soft:#e6f6eb; --bad:#b42318; --bad-soft:#fdeceb; --warn:#8a5a00; --warn-soft:#fff5d6;
   --radius:16px; --shadow:0 1px 2px rgba(16,24,40,.05),0 2px 8px rgba(16,24,40,.06);
 }
@@ -79,7 +80,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-o
 .big small{display:block;font-size:14px;opacity:.92}
 .big.in{background:var(--brand)}.big.in:active{background:var(--brand-dark)}
 .big.out{background:var(--out)}.big.out:active{background:var(--out-dark)}
+.big.ot{background:var(--ot)}.big.ot:active{background:var(--ot-dark)}
+.big.ot-out{background:var(--ot2)}.big.ot-out:active{background:var(--ot2-dark)}
 .big:disabled{background:#9aa6ad;cursor:not-allowed}
+/* ปฏิบัติงานนอกเวลาราชการ */
+.ot-card{border-top:4px solid var(--ot);margin-top:18px}
+.ot-card h3{color:var(--ot-dark)}
+.ot-card .today div{background:var(--ot-soft)}
+tr.total td{font-weight:700;background:#f7faf9}
 
 .today{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .today div{background:var(--bg);border-radius:12px;padding:10px 12px}
@@ -212,10 +220,11 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
     <div class="card">
       <label for="staffSel">ชื่อเจ้าหน้าที่</label>
       <select id="staffSel"><option value="">กำลังโหลด…</option></select>
-      <div class="today">
+      <div id="regToday" class="today">
         <div><span>เข้างานวันนี้</span><b id="tIn">—</b><em id="tInS"></em></div>
         <div><span>ออกงานวันนี้</span><b id="tOut">—</b><em id="tOutS"></em></div>
       </div>
+      <div id="dayNote" class="note info" hidden></div>
       <div id="staffNote" class="note" hidden></div>
     </div>
 
@@ -228,12 +237,35 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
       <span><b>ลงเวลาออกงาน</b><small id="outSub">สแกนใบหน้า (ไม่ตรวจ GPS)</small></span>
     </button>
 
+    <!-- ปฏิบัติงานนอกเวลาราชการ -->
+    <div id="otBox" hidden>
+      <div class="card ot-card">
+        <h3>ปฏิบัติงานนอกเวลาราชการ</h3>
+        <p id="otInfo" class="small muted" style="margin:0"></p>
+        <div id="otToday" class="today">
+          <div><span>เข้า (นอกเวลา)</span><b id="oIn">—</b><em id="oInS"></em></div>
+          <div><span>ออก (นอกเวลา)</span><b id="oOut">—</b><em id="oOutS"></em></div>
+        </div>
+        <div id="otNote" class="note" hidden></div>
+      </div>
+      <button id="btnOtIn" class="big ot" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span><b>เข้าปฏิบัติงานนอกเวลา</b><small id="otInSub">สแกนใบหน้า + ตรวจ GPS</small></span>
+      </button>
+      <button id="btnOtOut" class="big ot-out" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+        <span><b>ออกจากปฏิบัติงานนอกเวลา</b><small id="otOutSub">สแกนใบหน้า (ไม่ตรวจ GPS)</small></span>
+      </button>
+    </div>
+
     <div class="card rules">
       <h3>เงื่อนไขการลงเวลา</h3>
       <ul>
         <li><b>เข้างาน:</b> สแกนใบหน้า → ตรวจ GPS ต้องอยู่ภายใน <b id="rRadius">50</b> เมตรจากจุดกลางสำนักงาน (วัดเป็นเส้นตรง ไม่ใช่ระยะเดินตามถนน) → บันทึกเวลาจากเซิร์ฟเวอร์</li>
         <li><b>ออกงาน:</b> สแกนใบหน้า → บันทึกเวลาจากเซิร์ฟเวอร์ ไม่จำกัดระยะทาง</li>
         <li>เวลาทำงาน <span id="rHours">08:30–16:30</span> น. · เวลาที่บันทึกเป็นเวลาของเซิร์ฟเวอร์ ไม่ใช่นาฬิกาในมือถือ</li>
+        <li id="rOt" hidden><b>นอกเวลาราชการ:</b> วันทำการ (จันทร์–ศุกร์) <span id="rOtW">16:30–18:30</span> น. · วันหยุด (เสาร์–อาทิตย์/นักขัตฤกษ์) <span id="rOtH">09:00–12:00</span> น.
+          — เข้าสแกนใบหน้า + GPS เหมือนเข้างาน ลงเวลาได้ก่อนเวลาเริ่ม 30 นาที · ออกสแกนใบหน้า · นับชั่วโมงเฉพาะในช่วงเวลาที่กำหนด</li>
       </ul>
     </div>
   </section>
@@ -264,6 +296,7 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
       <div class="subnav no-print">
         <button data-sub="daily" class="on">รายงานประจำวัน</button>
         <button data-sub="monthly">รายงานประจำเดือน</button>
+        <button data-sub="ot">นอกเวลาราชการ</button>
         <button data-sub="staff">เจ้าหน้าที่ / ใบหน้า</button>
         <button data-sub="leave">ลา / ไปราชการ</button>
         <button data-sub="office">พิกัดสำนักงาน</button>
@@ -296,6 +329,28 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
           <div id="monthlyLink" class="small" hidden></div>
         </div>
         <div id="monthlyOut"></div>
+      </div>
+
+      <div id="sub-ot" class="sub">
+        <div class="card no-print">
+          <h3>บัญชีลงเวลาปฏิบัติงานนอกเวลาราชการ (รายวัน)</h3>
+          <div class="row"><div><label for="otDate">วันที่</label><input id="otDate" type="date"></div></div>
+          <div class="btns">
+            <button id="btnOtDaily" class="btn primary">แสดงรายงาน</button>
+            <button id="btnOtDailyPrint" class="btn">พิมพ์</button>
+          </div>
+        </div>
+        <div id="otDailyOut"></div>
+        <div class="card no-print">
+          <h3>สรุปปฏิบัติงานนอกเวลาราชการ (รายเดือน)</h3>
+          <label for="otMonth">เดือน</label><select id="otMonth"></select>
+          <div class="btns">
+            <button id="btnOtMonthly" class="btn primary">แสดงรายงาน</button>
+            <button id="btnOtMonthlyPrint" class="btn">พิมพ์</button>
+          </div>
+          <p class="small muted">แก้เวลาที่ผิดพลาด (เช่น ลืมลงเวลาออก) ได้ในแผ่นงาน "นอกเวลาราชการ" ของ Google Sheets — ชั่วโมงจะคำนวณใหม่ให้อัตโนมัติ</p>
+        </div>
+        <div id="otMonthlyOut"></div>
       </div>
 
       <div id="sub-staff" class="sub">
@@ -489,7 +544,11 @@ function renderAll() {
   $('#histStaff').value = S.staffId;
   fillMonths($('#histMonth'));
   fillMonths($('#mMonth'));
+  fillMonths($('#otMonth'));
   if (!$('#dDate').value) $('#dDate').value = c.today;
+  if (!$('#otDate').value) $('#otDate').value = c.today;
+  $('#rOt').hidden = !c.ot;
+  if (c.ot) { $('#rOtW').textContent = c.ot.weekdayPeriod; $('#rOtH').textContent = c.ot.holidayPeriod; }
   if (!$('#lvFrom').value) { $('#lvFrom').value = c.today; $('#lvTo').value = c.today; }
   renderToday();
   renderOffice();
@@ -521,12 +580,60 @@ function renderToday() {
   $('#btnOut').disabled = !can;
   $('#inSub').textContent = t.in ? 'ลงเวลาแล้ว ' + t.in.slice(0, 5) + ' น.' : `สแกนใบหน้า + ตรวจ GPS (ไม่เกิน ${S.cfg ? S.cfg.office.radius : 50} ม.)`;
   $('#outSub').textContent = t.out ? 'ลงเวลาแล้ว ' + t.out.slice(0, 5) + ' น.' : 'สแกนใบหน้า (ไม่ตรวจ GPS)';
+  renderOt(st, can);
+}
+
+/** ปฏิบัติงานนอกเวลาราชการ: วันหยุดซ่อนปุ่มลงเวลาปกติ เหลือเฉพาะปุ่มนอกเวลา */
+function renderOt(st, can) {
+  const c = S.cfg;
+  const ot = c && c.ot;
+  const holiday = !!(ot && !ot.workday);
+  $('#regToday').hidden = holiday;
+  $('#btnIn').hidden = holiday;
+  $('#btnOut').hidden = holiday;
+  const dn = $('#dayNote');
+  dn.hidden = !holiday;
+  if (holiday) dn.innerHTML = `วันนี้เป็นวันหยุดราชการ${ot.holiday ? ' (' + esc(ot.holiday) + ')' : ''} — ลงเวลาได้เฉพาะ<b>ปฏิบัติงานนอกเวลาราชการ</b> ${esc(ot.start)}–${esc(ot.end)} น.`;
+
+  $('#otBox').hidden = !c;
+  if (!c) return;
+  const note = $('#otNote');
+  if (!ot) {
+    // หน้าเว็บใหม่ แต่ Code.gs ยังเป็นเวอร์ชันเก่า (ก่อน 1.2.0)
+    $('#otInfo').textContent = '';
+    $('#otToday').hidden = true; $('#btnOtIn').hidden = true; $('#btnOtOut').hidden = true;
+    note.className = 'note warn'; note.hidden = false;
+    note.textContent = 'ยังใช้งานไม่ได้ — ผู้ดูแลต้อง Deploy ระบบหลังบ้าน (Code.gs) เวอร์ชันใหม่ก่อน';
+    return;
+  }
+  $('#otToday').hidden = false; $('#btnOtIn').hidden = false; $('#btnOtOut').hidden = false;
+  const o = (st && c.todayOt && c.todayOt[st.id]) || {};
+  $('#otInfo').innerHTML = `วันนี้ (${esc(ot.dayType)}) ช่วงปฏิบัติงาน <b>${esc(ot.start)}–${esc(ot.end)} น.</b>`;
+  $('#oIn').textContent = o.in ? o.in.slice(0, 5) : '—';
+  $('#oOut').textContent = o.out ? o.out.slice(0, 5) : '—';
+  $('#oInS').innerHTML = o.inStatus ? statusTag(o.inStatus) : '';
+  $('#oOutS').innerHTML = o.outStatus ? statusTag(o.outStatus) : '';
+  note.hidden = !o.out;
+  if (o.out) { note.className = 'note info'; note.textContent = 'ชั่วโมงที่นับได้วันนี้: ' + fmtHours(o.hours); }
+  $('#btnOtIn').disabled = !can;
+  $('#btnOtOut').disabled = !can;
+  $('#otInSub').textContent = o.in ? 'ลงเวลาแล้ว ' + o.in.slice(0, 5) + ' น.' : `ลงเวลาได้ ${ot.openFrom}–${ot.end} น. · สแกนใบหน้า + ตรวจ GPS`;
+  $('#otOutSub').textContent = o.out ? 'ลงเวลาแล้ว ' + o.out.slice(0, 5) + ' น.' : 'สแกนใบหน้า (ไม่ตรวจ GPS)';
 }
 
 function statusTag(s) {
-  const cls = s === 'สาย' || s === 'กลับก่อนเวลา' ? 'warn' : s === 'ตรงเวลา' || s === 'ปกติ' ? 'ok' : 'info';
+  const cls = s === 'สาย' || s === 'กลับก่อนเวลา' ? 'warn' : s === 'ตรงเวลา' || s === 'ปกติ' || s === 'ครบเวลา' ? 'ok' : 'info';
   return `<span class="tag ${cls}">${esc(s)}</span>`;
 }
+
+/** 2.5 → "2 ชม. 30 นาที" */
+function fmtHours(h) {
+  const m = Math.round((Number(h) || 0) * 60), hh = Math.floor(m / 60), mm = m % 60;
+  return [hh ? hh + ' ชม.' : '', mm ? mm + ' นาที' : ''].filter(Boolean).join(' ') || '0 ชม.';
+}
+
+/** เวลาปัจจุบัน (ตามเซิร์ฟเวอร์) รูปแบบ HH:mm */
+function nowHM() { return fmtTime.format(new Date(Date.now() + S.offset)).slice(0, 5); }
 
 function fillMonths(sel) {
   if (!S.cfg || sel.options.length) return;
@@ -761,30 +868,50 @@ function openScanner(title, who, steps) {
   return S.token;
 }
 
-/* ---------- ลงเวลาเข้า/ออก ---------- */
+/* ---------- ลงเวลาเข้า/ออก (ปกติ และ นอกเวลาราชการ) ---------- */
+const FLOW = {
+  in: { title: 'ลงเวลาเข้างาน', action: 'checkIn', gps: true, ok: 'ลงเวลาเข้างานสำเร็จ', label: 'เวลาเข้างาน' },
+  out: { title: 'ลงเวลาออกงาน', action: 'checkOut', gps: false, ok: 'ลงเวลาออกงานสำเร็จ', label: 'เวลาออกงาน' },
+  otIn: { title: 'เข้าปฏิบัติงานนอกเวลา', action: 'otCheckIn', gps: true, ok: 'ลงเวลาเข้าปฏิบัติงานนอกเวลาสำเร็จ', label: 'เวลาเข้า', ot: true },
+  otOut: { title: 'ออกจากปฏิบัติงานนอกเวลา', action: 'otCheckOut', gps: false, ok: 'ลงเวลาออกจากปฏิบัติงานนอกเวลาสำเร็จ', label: 'เวลาออก', ot: true },
+};
+
 async function clockFlow(kind) {
   if (S.busy || !S.cfg) return;
+  const F = FLOW[kind];
   const st = staffById(S.staffId);
   if (!st) { toast('กรุณาเลือกชื่อของท่านก่อน'); $('#staffSel').focus(); return; }
-  const t = S.cfg.todayStatus[st.id] || {};
+  const t = (F.ot ? (S.cfg.todayOt || {})[st.id] : S.cfg.todayStatus[st.id]) || {};
   const off = S.cfg.office;
+  const ot = S.cfg.ot;
   if (!st.enrolled) return showResult('bad', 'ยังไม่ได้ลงทะเบียนใบหน้า', `<p>${esc(st.name)} ยังไม่มีข้อมูลใบหน้าในระบบ กรุณาติดต่อผู้ดูแลเพื่อลงทะเบียนก่อนใช้งาน</p>`);
+  if (F.ot && !ot) return showResult('bad', 'ยังใช้งานไม่ได้', '<p>ผู้ดูแลต้อง Deploy ระบบหลังบ้าน (Code.gs) เวอร์ชันใหม่ก่อน</p>');
   if (kind === 'in' && t.in) return showResult('warn', 'ลงเวลาเข้างานแล้ว', `<p>วันนี้ลงเวลาเข้างานเมื่อ <b>${esc(t.in)} น.</b></p>`);
   if (kind === 'out' && t.out) return showResult('warn', 'ลงเวลาออกงานแล้ว', `<p>วันนี้ลงเวลาออกงานเมื่อ <b>${esc(t.out)} น.</b></p>`);
-  if (kind === 'in' && (off.lat == null || off.lng == null)) return showResult('bad', 'ยังไม่ได้กำหนดพิกัดสำนักงาน', '<p>ผู้ดูแลต้องตั้งค่าพิกัดจุดกลางสำนักงานก่อน (เมนู ผู้ดูแล › พิกัดสำนักงาน)</p>');
+  if (kind === 'otIn' && t.in) return showResult('warn', 'ลงเวลาเข้าปฏิบัติงานนอกเวลาแล้ว', `<p>วันนี้ลงเวลาเข้าเมื่อ <b>${esc(t.in)} น.</b></p>`);
+  if (kind === 'otOut' && t.out) return showResult('warn', 'ลงเวลาออกจากปฏิบัติงานนอกเวลาแล้ว', `<p>วันนี้ลงเวลาออกเมื่อ <b>${esc(t.out)} น.</b></p>`);
+  if (kind === 'otOut' && !t.in) return showResult('warn', 'ยังไม่ได้ลงเวลาเข้าปฏิบัติงานนอกเวลา', '<p>กรุณากด <b>"เข้าปฏิบัติงานนอกเวลา"</b> ก่อน</p>');
+  if (F.gps && (off.lat == null || off.lng == null)) return showResult('bad', 'ยังไม่ได้กำหนดพิกัดสำนักงาน', '<p>ผู้ดูแลต้องตั้งค่าพิกัดจุดกลางสำนักงานก่อน (เมนู ผู้ดูแล › พิกัดสำนักงาน)</p>');
+  if (kind === 'otIn') {
+    const hm = nowHM();
+    if (hm < ot.openFrom || hm >= ot.end) {
+      return showResult('warn', hm < ot.openFrom ? 'ยังไม่ถึงเวลาปฏิบัติงานนอกเวลา' : 'เลยเวลาลงเวลาเข้าแล้ว',
+        `<p>วันนี้ (${esc(ot.dayType)}) ลงเวลาเข้าได้ <b>${esc(ot.openFrom)}–${esc(ot.end)} น.</b><br>ช่วงปฏิบัติงาน ${esc(ot.start)}–${esc(ot.end)} น.</p>`);
+    }
+  }
   if (kind === 'out' && !t.in && !confirm('วันนี้ยังไม่มีเวลาเข้างานในระบบ ต้องการลงเวลาออกงานต่อหรือไม่?')) return;
 
   S.busy = true;
-  const tok = openScanner(kind === 'in' ? 'ลงเวลาเข้างาน' : 'ลงเวลาออกงาน', st.name,
-    kind === 'in' ? [['face', '1 สแกนใบหน้า'], ['gps', '2 ตรวจ GPS'], ['save', '3 บันทึกเวลา']]
-                  : [['face', '1 สแกนใบหน้า'], ['save', '2 บันทึกเวลา']]);
+  const tok = openScanner(F.title, st.name,
+    F.gps ? [['face', '1 สแกนใบหน้า'], ['gps', '2 ตรวจ GPS'], ['save', '3 บันทึกเวลา']]
+          : [['face', '1 สแกนใบหน้า'], ['save', '2 บันทึกเวลา']]);
   try {
     step('face', 'active');
     const face = await scanFace(tok, { samples: 3 });
     step('face', 'done');
 
     let pos = null;
-    if (kind === 'in') {
+    if (F.gps) {
       step('gps', 'active');
       scanMsg('กำลังหาตำแหน่ง GPS… (ถ้าอยู่ในอาคาร ให้เข้าใกล้หน้าต่าง)');
       pos = await getPosition({
@@ -799,21 +926,25 @@ async function clockFlow(kind) {
     scanMsg('กำลังตรวจสอบกับเซิร์ฟเวอร์และบันทึกเวลา…');
     const payload = { staffId: st.id, descriptors: face.descriptors, photo: S.cfg.savePhoto ? face.photo : '' };
     if (pos) Object.assign(payload, { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy });
-    const r = await api(kind === 'in' ? 'checkIn' : 'checkOut', payload);
+    const r = await api(F.action, payload);
     step('save', 'done');
 
-    S.cfg.todayStatus[st.id] = Object.assign({}, S.cfg.todayStatus[st.id],
-      kind === 'in' ? { in: r.time, inStatus: r.status } : { out: r.time, outStatus: r.status });
+    const isIn = kind === 'in' || kind === 'otIn';
+    const upd = isIn ? { in: r.time, inStatus: r.status } : { out: r.time, outStatus: r.status };
+    if (F.ot) {
+      S.cfg.todayOt = S.cfg.todayOt || {};
+      S.cfg.todayOt[st.id] = Object.assign({}, S.cfg.todayOt[st.id], upd, kind === 'otOut' ? { hours: r.hours } : {});
+    } else {
+      S.cfg.todayStatus[st.id] = Object.assign({}, S.cfg.todayStatus[st.id], upd);
+    }
     renderToday();
     closeOverlay('#scanner');
-    const rows = [
-      ['ชื่อ', esc(r.name)],
-      ['วันที่', esc(r.dateThai)],
-      [kind === 'in' ? 'เวลาเข้างาน' : 'เวลาออกงาน', `<b>${esc(r.time)} น.</b> ${statusTag(r.status)}`],
-    ];
-    if (kind === 'in') rows.push(['ระยะจากสำนักงาน', `${r.distance} ม. (กำหนด ≤ ${r.radius} ม.)`]);
-    showResult('ok', kind === 'in' ? 'ลงเวลาเข้างานสำเร็จ' : 'ลงเวลาออกงานสำเร็จ',
-      `<div class="kv">${rows.map(x => `<span>${x[0]}</span><div>${x[1]}</div>`).join('')}</div>`);
+    const rows = [['ชื่อ', esc(r.name)], ['วันที่', esc(r.dateThai)]];
+    if (F.ot) rows.push(['ช่วงเวลา', `${esc(r.dayType)} ${esc(r.period)} น.`]);
+    rows.push([F.label, `<b>${esc(r.time)} น.</b> ${statusTag(r.status)}`]);
+    if (F.gps) rows.push(['ระยะจากสำนักงาน', `${r.distance} ม. (กำหนด ≤ ${r.radius} ม.)`]);
+    if (kind === 'otOut') rows.push(['ชั่วโมงที่นับได้', `<b>${esc(fmtHours(r.hours))}</b>`]);
+    showResult('ok', F.ok, `<div class="kv">${rows.map(x => `<span>${x[0]}</span><div>${x[1]}</div>`).join('')}</div>`);
   } catch (e) {
     closeOverlay('#scanner');
     if (!e.cancelled) showResult('bad', 'ลงเวลาไม่สำเร็จ', `<p>${esc(e.message)}</p>`);
@@ -853,6 +984,20 @@ async function loadHistory() {
                  x.noOut ? '<span class="tag bad">ไม่ได้ลงเวลาออก</span>' : '',
                  x.note ? esc(x.note) : ''].filter(Boolean).join(' ')}</td></tr>`).join('')}
         </tbody></table></div>` : '<p class="muted">ไม่มีรายการในเดือนนี้</p>'}
+      ${(r.ot || []).length ? `<h3 style="margin-top:18px">ปฏิบัติงานนอกเวลาราชการ · ${s.otCount} ครั้ง · ${esc(fmtHours(s.otHours))}</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>วันที่</th><th>ช่วงเวลา</th><th class="num">เข้า</th><th class="num">ออก</th><th class="num">ชั่วโมง</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>${r.ot.map(x => `<tr>
+          <td>${esc(x.day)} ${esc(x.dateThai)}</td>
+          <td>${esc(x.dayType)} ${esc(x.period)}</td>
+          <td class="num">${x.in ? esc(x.in.slice(0, 5)) : '—'}</td>
+          <td class="num">${x.out ? esc(x.out.slice(0, 5)) : '—'}</td>
+          <td class="num">${x.out ? esc(fmtHours(x.hours)) : '—'}</td>
+          <td>${[x.inStatus === 'สาย' ? statusTag('สาย') : '',
+                 x.outStatus === 'กลับก่อนเวลา' ? statusTag('กลับก่อนเวลา') : '',
+                 x.noOut ? '<span class="tag bad">ไม่ได้ลงเวลาออก</span>' : '',
+                 x.note ? esc(x.note) : ''].filter(Boolean).join(' ')}</td></tr>`).join('')}
+        </tbody></table></div>` : ''}
     </div>`;
   } catch (e) { out.innerHTML = errHtml(e); }
 }
@@ -891,6 +1036,7 @@ function openSub(name) {
   $$('.sub').forEach(s => s.classList.toggle('on', s.id === 'sub-' + name));
   if (name === 'daily' && !$('#dailyOut').innerHTML) loadDaily();
   if (name === 'monthly' && !$('#monthlyOut').innerHTML) loadMonthly();
+  if (name === 'ot' && !$('#otDailyOut').innerHTML) loadOtDaily();
   if (name === 'staff' || name === 'leave') loadStaffAdmin();
   if (name === 'office') renderOffice();
 }
@@ -950,6 +1096,58 @@ async function loadMonthly() {
         <tbody>${r.rows.map(x => `<tr><td class="num">${x.no}</td><td>${esc(x.name)}</td><td>${esc(x.position)}</td>
           <td class="num">${x.present}</td><td class="num">${x.late}</td><td class="num">${x.early}</td><td class="num">${x.noOut}</td>
           <td class="num">${x.leave}</td><td class="num">${x.travel}</td><td class="num">${x.absent}</td></tr>`).join('')}</tbody></table></div>
+      <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
+    </div>`;
+  } catch (e) { out.innerHTML = errHtml(e); }
+}
+
+/* ปฏิบัติงานนอกเวลาราชการ: บัญชีลงเวลารายวัน + สรุปรายเดือน */
+async function loadOtDaily() {
+  const out = $('#otDailyOut');
+  out.innerHTML = loadingHtml();
+  try { out.innerHTML = otDailyHtml(await adminApi('reportOtDaily', { date: $('#otDate').value })); }
+  catch (e) { out.innerHTML = errHtml(e); }
+}
+
+function otDailyHtml(r) {
+  const photo = (u, t) => u ? ` <a class="no-print small" href="${esc(u)}" target="_blank" rel="noopener">${t}</a>` : '';
+  const rows = r.rows.map(x => `<tr>
+      <td class="num">${x.no}</td><td class="name">${esc(x.name)}</td><td>${esc(x.position)}</td>
+      <td class="num">${esc(x.in)}</td><td class="num">${esc(x.out)}</td>
+      <td class="num">${x.out ? esc(fmtHours(x.hours)) : ''}</td>
+      <td>${esc(x.note)}${photo(x.photoIn, 'ภาพเข้า')}${photo(x.photoOut, 'ภาพออก')}</td></tr>`);
+  for (let i = r.rows.length; i < 5; i++) rows.push(`<tr><td class="num">${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`);
+  return `<div class="card paper">
+    <div class="h"><b>บัญชีลงเวลาปฏิบัติงานนอกเวลาราชการ</b>
+      <div>${esc(r.dateThai)} · ${esc(r.dayType)}${r.holiday ? ' (' + esc(r.holiday) + ')' : ''} · เวลา ${esc(r.period)} น.</div>
+      <div>${esc(r.office.name)}   ${esc(r.office.address)}</div></div>
+    <div class="tbl-wrap"><table class="form daily">
+      <thead><tr><th>ลำดับ</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>เวลามา</th><th>เวลากลับ</th><th>ชั่วโมง</th><th>หมายเหตุ</th></tr></thead>
+      <tbody>${rows.join('')}</tbody></table></div>
+    <div class="sumgrid"><div>ผู้ปฏิบัติงานนอกเวลาราชการ <b>${r.count}</b> คน</div><div>ชั่วโมงรวม <b>${esc(fmtHours(r.totalHours))}</b></div></div>
+    <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
+    <p class="small muted" style="margin-top:14px">ข้อมูลจากระบบลงเวลาออนไลน์ — เข้ายืนยันด้วยใบหน้าและ GPS ภายในรัศมี ${r.office.radius} ม. · ออกยืนยันด้วยใบหน้า · นับชั่วโมงเฉพาะช่วง ${esc(r.period)} น.</p>
+  </div>`;
+}
+
+async function loadOtMonthly() {
+  const out = $('#otMonthlyOut');
+  out.innerHTML = loadingHtml();
+  try {
+    const r = await adminApi('reportOtMonthly', { month: $('#otMonth').value });
+    const T = r.total;
+    out.innerHTML = `<div class="card paper">
+      <div class="h"><b>สรุปการปฏิบัติงานนอกเวลาราชการ ประจำเดือน ${esc(r.monthThai)}</b>
+        <div>${esc(r.office.name)}   ${esc(r.office.address)}</div>
+        <div class="small muted">วันทำการ ${esc(r.weekdayPeriod)} น. · วันหยุดราชการ ${esc(r.holidayPeriod)} น.</div></div>
+      ${r.rows.length ? `<div class="tbl-wrap"><table class="form">
+        <thead><tr><th>ลำดับ</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>วันทำการ (ครั้ง)</th><th>วันหยุด (ครั้ง)</th><th>รวม (ครั้ง)</th><th>ชั่วโมงรวม</th><th>ไม่ลงเวลาออก</th></tr></thead>
+        <tbody>${r.rows.map(x => `<tr><td class="num">${x.no}</td><td>${esc(x.name)}</td><td>${esc(x.position)}</td>
+          <td class="num">${x.weekday}</td><td class="num">${x.holiday}</td><td class="num">${x.total}</td>
+          <td class="num">${esc(fmtHours(x.hours))}</td><td class="num">${x.noOut}</td></tr>`).join('')}
+          <tr class="total"><td></td><td colspan="2">รวม</td><td class="num">${T.weekday}</td><td class="num">${T.holiday}</td>
+          <td class="num">${T.total}</td><td class="num">${esc(fmtHours(T.hours))}</td><td class="num">${T.noOut}</td></tr>
+        </tbody></table></div>` : '<p class="muted c">ไม่มีการปฏิบัติงานนอกเวลาราชการในเดือนนี้</p>'}
       <div class="sign">ลงชื่อ ........................................ ผู้ตรวจ<br>(${esc(r.office.checkerName)})<br>${esc(r.office.checkerPosition)}</div>
     </div>`;
   } catch (e) { out.innerHTML = errHtml(e); }
@@ -1211,6 +1409,12 @@ function bindUI() {
   });
   $('#btnIn').addEventListener('click', () => clockFlow('in'));
   $('#btnOut').addEventListener('click', () => clockFlow('out'));
+  $('#btnOtIn').addEventListener('click', () => clockFlow('otIn'));
+  $('#btnOtOut').addEventListener('click', () => clockFlow('otOut'));
+  $('#btnOtDaily').addEventListener('click', loadOtDaily);
+  $('#btnOtDailyPrint').addEventListener('click', () => printReport('#otDailyOut', 'บัญชีลงเวลานอกเวลาราชการ ' + ($('#otDate').value || '')));
+  $('#btnOtMonthly').addEventListener('click', loadOtMonthly);
+  $('#btnOtMonthlyPrint').addEventListener('click', () => printReport('#otMonthlyOut', 'สรุปนอกเวลาราชการ ' + ($('#otMonth').value || '')));
   $('#scanCancel').addEventListener('click', () => { if (S.token) S.token.cancelled = true; stopCamera(); closeOverlay('#scanner'); });
   $('#resOk').addEventListener('click', () => closeOverlay('#result'));
   $('#btnHist').addEventListener('click', loadHistory);
