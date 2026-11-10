@@ -310,6 +310,8 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
         <li id="rOt" hidden><b>นอกเวลาราชการ:</b> วันทำการ (จันทร์–ศุกร์) <span id="rOtW">16:30–18:30</span> น. · วันหยุด (เสาร์–อาทิตย์/นักขัตฤกษ์) <span id="rOtH">09:00–12:00</span> น.
           — เข้าสแกนใบหน้า + GPS เหมือนเข้างาน ลงเวลาได้ก่อนเวลาเริ่ม 30 นาที · ออกสแกนใบหน้า · นับชั่วโมงเฉพาะในช่วงเวลาที่กำหนด</li>
       </ul>
+      <p class="small muted" style="margin:12px 0 0">สแกนใบหน้าไม่สำเร็จบ่อย? ตรวจกล้องและความเร็วของโทรศัพท์เครื่องนี้ได้ (ไม่บันทึกเวลา)</p>
+      <div class="btns" style="margin-top:6px"><button id="btnDevTest" class="btn sm ghost" type="button">ทดสอบอุปกรณ์นี้ (กล้อง / สแกนใบหน้า)</button></div>
     </div>
   </section>
 
@@ -842,6 +844,11 @@ function getPosition(opt) {
 }
 
 /* ---------- กล้อง + จดจำใบหน้า (face-api.js) ---------- */
+// มือถือหน่วยความจำน้อย (≤ 2 GB) ใช้ภาพขนาดเล็กลง ตรวจจับใบหน้าได้เร็วขึ้นราว 2 เท่า
+const LOW_END = (navigator.deviceMemory > 0 && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2);
+const DETECT_SIZE = LOW_END ? 224 : 320;
+const MIN_SCORE = 0.55;                 // ความชัดขั้นต่ำของใบหน้าที่ใช้ได้
+const FACE = { loadMs: 0, warmMs: 0 };  // เวลาโหลดระบบ / เวลาเตรียม GPU ครั้งแรก
 let facePromise = null;
 function loadScript(src) {
   return new Promise((res, rej) => {
@@ -854,6 +861,7 @@ function loadScript(src) {
 function loadFace() {
   if (facePromise) return facePromise;
   facePromise = (async () => {
+    const t0 = performance.now();
     if (!window.faceapi) await loadScript(FACE_CDN + '/dist/face-api.js');
     if (faceapi.tf && faceapi.tf.ready) await faceapi.tf.ready();
     const uri = FACE_CDN + '/model';
@@ -862,6 +870,18 @@ function loadFace() {
       faceapi.nets.faceLandmark68Net.loadFromUri(uri),
       faceapi.nets.faceRecognitionNet.loadFromUri(uri),
     ]);
+    FACE.loadMs = performance.now() - t0;
+    // อุ่นเครื่อง: ประมวลผลภาพว่างครบทั้ง 3 ขั้นหนึ่งครั้ง ให้เบราว์เซอร์เตรียม GPU ไว้ก่อน
+    // (มือถือรุ่นเล็กครั้งแรกอาจใช้ 5–20 วินาที) จะได้ไม่กินเวลาตอนสแกนจริง
+    const t1 = performance.now();
+    try {
+      const c = document.createElement('canvas'); c.width = 320; c.height = 240;
+      c.getContext('2d').fillRect(0, 0, 320, 240);
+      await faceapi.detectAllFaces(c, new faceapi.TinyFaceDetectorOptions({ inputSize: DETECT_SIZE, scoreThreshold: 0.5 }));
+      await faceapi.detectFaceLandmarks(c);
+      await faceapi.computeFaceDescriptor(c);
+    } catch (e) { /* ไม่เป็นไร การสแกนจริงจะเตรียมเอง */ }
+    FACE.warmMs = performance.now() - t1;
   })();
   facePromise.catch(() => { facePromise = null; });
   return facePromise;
@@ -905,30 +925,33 @@ function checkTok(tok) { if (tok.cancelled) throw cancelErr(); }
 
 /** สแกนใบหน้า: เก็บค่าลักษณะใบหน้า (descriptor 128 ค่า) จากหลายเฟรมที่มีใบหน้าเดียวชัดเจน */
 async function scanFace(tok, opt) {
-  const { samples = 3, gap = 150, timeout = 30000, hint } = opt || {};
+  const { samples = 3, gap = 150, timeout = 45000, hint } = opt || {};
   scanMsg('กำลังโหลดระบบจดจำใบหน้า… (ครั้งแรกอาจใช้เวลา 10–30 วินาที)');
   await loadFace(); checkTok(tok);
   scanMsg('กำลังเปิดกล้อง…');
   const video = $('#video');
   await startCamera(video); checkTok(tok);
-  const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+  const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: DETECT_SIZE, scoreThreshold: 0.5 });
   const ring = $('#ring');
   const out = []; let photo = '';
+  const n = { frames: 0, ms: 0, none: 0, multi: 0, small: 0, blur: 0 }; // สถิติไว้บอกสาเหตุเมื่อไม่สำเร็จ
   const t0 = Date.now();
   scanMsg(hint || 'มองตรงที่กล้อง ให้ใบหน้าอยู่ในกรอบวงรี');
   while (out.length < samples) {
     checkTok(tok);
-    if (Date.now() - t0 > timeout) throw new Error('สแกนใบหน้าไม่สำเร็จภายในเวลาที่กำหนด — ถอดหน้ากาก/แว่นกันแดด อยู่ในที่มีแสงสว่างพอ แล้วลองใหม่');
+    if (Date.now() - t0 > timeout) throw new Error(scanFailMsg(n));
+    const f0 = performance.now();
     const dets = await faceapi.detectAllFaces(video, opts).withFaceLandmarks().withFaceDescriptors();
+    n.frames++; n.ms += performance.now() - f0;
     checkTok(tok);
     if (!dets.length) {
-      ring.className = 'ring'; scanMsg('ไม่พบใบหน้า — จัดใบหน้าให้อยู่ในกรอบ');
+      n.none++; ring.className = 'ring'; scanMsg('ไม่พบใบหน้า — จัดใบหน้าให้อยู่ในกรอบ');
     } else if (dets.length > 1) {
-      ring.className = 'ring bad'; out.length = 0; scanMsg('พบมากกว่า 1 ใบหน้า — กรุณาสแกนทีละคน');
+      n.multi++; ring.className = 'ring bad'; out.length = 0; scanMsg('พบมากกว่า 1 ใบหน้า — กรุณาสแกนทีละคน');
     } else {
       const d = dets[0], box = d.detection.box;
-      if (box.width < video.videoWidth * 0.2) { ring.className = 'ring'; scanMsg('ขยับเข้าใกล้กล้องอีกนิด'); }
-      else if (d.detection.score < 0.6) { ring.className = 'ring'; scanMsg('ภาพไม่ชัด — หันหน้าตรงและเพิ่มแสงสว่าง'); }
+      if (box.width < video.videoWidth * 0.2) { n.small++; ring.className = 'ring'; scanMsg('ขยับเข้าใกล้กล้องอีกนิด'); }
+      else if (d.detection.score < MIN_SCORE) { n.blur++; ring.className = 'ring'; scanMsg('ภาพไม่ชัด — หันหน้าเข้าหาแสงและถือโทรศัพท์นิ่ง ๆ'); }
       else {
         out.push(Array.from(d.descriptor, v => Math.round(v * 1e5) / 1e5));
         if (!photo || out.length === Math.ceil(samples / 2)) photo = snapshot(video);
@@ -940,6 +963,88 @@ async function scanFace(tok, opt) {
   }
   stopCamera();
   return { descriptors: out, photo };
+}
+
+const sec = ms => (ms / 1000).toFixed(1);
+
+/** สแกนไม่สำเร็จภายในเวลา: บอกสาเหตุที่พบบ่อยที่สุดระหว่างสแกน พร้อมวิธีแก้ */
+function scanFailMsg(n) {
+  const avg = n.frames ? n.ms / n.frames : 0;
+  if (n.frames < 6 || avg > 3000) {
+    return `โทรศัพท์เครื่องนี้ประมวลผลภาพช้า (ประมาณ ${sec(avg)} วินาทีต่อภาพ) — ปิดแอปอื่นที่เปิดค้างไว้ รีสตาร์ทโทรศัพท์ อัปเดต Chrome แล้วลองใหม่ หรือกด "ทดสอบอุปกรณ์นี้" ด้านล่างของหน้า`;
+  }
+  const top = Math.max(n.none, n.multi, n.small, n.blur);
+  if (top === n.blur) return 'ภาพใบหน้าไม่ชัดพอ — หันหน้าเข้าหาแสง (อย่ายืนย้อนแสง) เช็ดเลนส์กล้องหน้า ถอดหน้ากาก/แว่นกันแดด แล้วลองใหม่';
+  if (top === n.small) return 'ใบหน้าอยู่ไกลกล้องเกินไป — ถือโทรศัพท์ให้ใกล้ขึ้นจนใบหน้าเต็มกรอบวงรี แล้วลองใหม่';
+  if (top === n.multi) return 'พบหลายใบหน้าในกล้อง — กรุณาสแกนทีละคน';
+  return 'ไม่พบใบหน้าในกล้อง — มองตรงที่กล้องหน้า อยู่ในที่มีแสงสว่างพอ ถอดหน้ากาก/แว่นกันแดด แล้วลองใหม่';
+}
+
+/* ---------- ทดสอบอุปกรณ์: กล้อง + ความเร็วสแกนใบหน้า (ไม่บันทึกเวลา ไม่ส่งข้อมูลใบหน้า) ---------- */
+async function deviceTest() {
+  if (S.busy) return;
+  S.busy = true;
+  const tok = openScanner('ทดสอบอุปกรณ์นี้', 'ไม่บันทึกเวลา และไม่ส่งข้อมูลใบหน้าไปที่ใด',
+    [['load', '1 ระบบสแกน'], ['cam', '2 กล้อง'], ['scan', '3 ความเร็ว']]);
+  const R = []; // [รายการ, ผล, true=ผ่าน / null=พอใช้ / false=มีปัญหา]
+  const add = (k, v, ok) => R.push([k, v, ok]);
+  add('เบราว์เซอร์', IN_APP ? `ภายใน ${APP_NAME} (ใช้กล้องไม่ได้)` : window.isSecureContext ? 'ปกติ' : 'ไม่ใช่ https', !IN_APP && window.isSecureContext);
+  add('หน่วยความจำ / CPU', `${navigator.deviceMemory || '?'} GB · ${navigator.hardwareConcurrency || '?'} คอร์${LOW_END ? ' (โหมดเครื่องสเปกต่ำ)' : ''}`, 'info');
+  try {
+    step('load', 'active'); scanMsg('กำลังโหลดระบบจดจำใบหน้า… (ครั้งแรกอาจใช้เวลา 10–30 วินาที)');
+    await loadFace(); checkTok(tok);
+    const be = faceapi.tf && faceapi.tf.getBackend ? faceapi.tf.getBackend() : '?';
+    add('ระบบประมวลผล', be === 'webgl' ? 'ใช้ GPU (webgl)' : `${be} — ไม่ได้ใช้ GPU จะช้ามาก`, be === 'webgl');
+    add('โหลด / เตรียมระบบ', `${sec(FACE.loadMs)} / ${sec(FACE.warmMs)} วินาที`, FACE.warmMs < 20000 ? true : null);
+    step('load', 'done'); step('cam', 'active'); scanMsg('กำลังเปิดกล้อง…');
+    const video = $('#video');
+    await startCamera(video); checkTok(tok);
+    add('กล้องหน้า', `${video.videoWidth}×${video.videoHeight}`, video.videoWidth >= 320);
+    step('cam', 'done'); step('scan', 'active');
+    const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: DETECT_SIZE, scoreThreshold: 0.5 });
+    let frames = 0, ms = 0, found = 0, best = 0;
+    const t0 = Date.now();
+    while (Date.now() - t0 < 10000 && frames < 15) {
+      checkTok(tok);
+      scanMsg(`มองกล้องไว้ กำลังวัดความเร็ว… อีก ${Math.max(0, Math.ceil((10000 - (Date.now() - t0)) / 1000))} วินาที`);
+      const f0 = performance.now();
+      const dets = await faceapi.detectAllFaces(video, opts).withFaceLandmarks().withFaceDescriptors();
+      ms += performance.now() - f0; frames++;
+      if (dets.length === 1) { found++; best = Math.max(best, dets[0].detection.score); $('#ring').className = 'ring ok'; }
+      else $('#ring').className = 'ring';
+    }
+    const avg = ms / frames;
+    add('ความเร็วสแกน', `${sec(avg)} วินาที/ภาพ (${frames} ภาพ)`, avg <= 1500 ? true : avg <= 3000 ? null : false);
+    add('พบใบหน้า', `${found}/${frames} ภาพ · ความชัดสูงสุด ${best ? best.toFixed(2) : '-'} (ต้อง ≥ ${MIN_SCORE})`, found > 0 && best >= MIN_SCORE);
+    step('scan', 'done');
+  } catch (e) {
+    if (e.cancelled) return;
+    add('ข้อผิดพลาด', e.message, false);
+  } finally {
+    stopCamera(); S.busy = false; closeOverlay('#scanner');
+  }
+  showDeviceResult(R);
+}
+
+function showDeviceResult(R) {
+  const bad = R.filter(r => r[2] === false).map(r => r[0]);
+  const warn = R.some(r => r[2] === null);
+  const tips = [];
+  if (bad.includes('เบราว์เซอร์')) tips.push(`เปิดลิงก์ใน ${IS_IOS ? 'Safari' : 'Chrome'} แทน — ${openOutsideHow()}`);
+  if (bad.includes('ระบบประมวลผล')) tips.push('อัปเดต Chrome เป็นรุ่นล่าสุด (Play Store › Chrome › อัปเดต)');
+  if (bad.includes('ความเร็วสแกน') || warn) tips.push('ปิดแอปอื่นที่เปิดค้างไว้ (ปุ่ม ||| › ปิดทั้งหมด) รีสตาร์ทโทรศัพท์ และอัปเดต Chrome แล้วทดสอบอีกครั้ง');
+  if (bad.includes('พบใบหน้า')) tips.push('หันหน้าเข้าหาแสง (อย่ายืนย้อนแสง) เช็ดเลนส์กล้องหน้า ถือโทรศัพท์นิ่ง ๆ ให้ใบหน้าเต็มกรอบ');
+  if (bad.includes('ข้อผิดพลาด')) tips.push('ทำตามข้อความในรายการ "ข้อผิดพลาด" แล้วทดสอบอีกครั้ง');
+  const icon = ok => ok === true ? '✅' : ok === 'info' ? 'ℹ️' : ok === null ? '⚠️' : '❌';
+  const kind = bad.length ? 'bad' : warn ? 'warn' : 'ok';
+  const title = bad.length ? 'อุปกรณ์นี้มีปัญหา' : warn ? 'ใช้ได้ แต่ค่อนข้างช้า' : 'อุปกรณ์นี้พร้อมใช้งาน';
+  showResult(kind, title, `<div class="kv">${R.map(r => `<span>${icon(r[2])} ${esc(r[0])}</span><div>${esc(r[1])}</div>`).join('')}</div>
+    ${tips.length ? `<ul style="text-align:left;margin:10px 0 0;padding-left:20px">${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    <button id="devCopy" class="btn sm" type="button" style="margin-top:10px">คัดลอกผลทดสอบ (ส่งให้ผู้ดูแล)</button>`);
+  $('#devCopy').onclick = async () => {
+    const text = ['ผลทดสอบอุปกรณ์ Smart Attendance', ...R.map(r => `${icon(r[2])} ${r[0]}: ${r[1]}`), navigator.userAgent].join('\n');
+    toast(await copyText(text) ? 'คัดลอกแล้ว — วางในแชท LINE ส่งให้ผู้ดูแลได้เลย' : 'คัดลอกไม่ได้ — กรุณาถ่ายภาพหน้าจอแทน');
+  };
 }
 
 function setSteps(list) { $('#steps').innerHTML = list.map(s => `<li data-k="${s[0]}">${esc(s[1])}</li>`).join(''); }
@@ -1498,6 +1603,7 @@ function bindUI() {
   });
   $('#btnIn').addEventListener('click', () => clockFlow('in'));
   $('#btnOut').addEventListener('click', () => clockFlow('out'));
+  $('#btnDevTest').addEventListener('click', deviceTest);
   $('#btnOtIn').addEventListener('click', () => clockFlow('otIn'));
   $('#btnOtOut').addEventListener('click', () => clockFlow('otOut'));
   $('#btnOtDaily').addEventListener('click', loadOtDaily);
