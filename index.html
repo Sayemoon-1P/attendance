@@ -113,6 +113,23 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-o
 .ot-card h3{color:var(--ot-dark)}
 .ot-card .today div{background:var(--ot-soft)}
 tr.total td{font-weight:700;background:#f7faf9}
+/* วิธียืนยันตัวตน: สแกนใบหน้า / บัตร QR */
+.method{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+.method>span{font-size:14px;color:var(--muted)}
+.seg{display:flex;background:#e3eae8;border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:8px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer}
+.seg button.on{background:#fff;color:var(--brand-dark);box-shadow:var(--shadow)}
+/* โหมดอ่านบัตร QR (กล้องหลัง): ไม่กลับด้านภาพ และใช้กรอบสี่เหลี่ยม */
+.cam.qr video{transform:none}
+.cam.qr .ring{border-radius:18px;width:72%;height:auto;aspect-ratio:1/1;top:50%}
+/* บัตร QR ประจำตัว */
+.qr-card{width:290px;max-width:100%;margin:12px auto;border:2px solid var(--brand);border-radius:16px;padding:14px;text-align:center;background:#fff}
+.qr-card .qc-logo{width:44px;height:44px;border-radius:50%}
+.qr-card .qc-h{font-weight:700;color:var(--brand-dark)}
+.qr-card .qc-code svg{width:200px;height:200px;display:block;margin:6px auto}
+.qr-card .qc-name{font-size:18px;font-weight:700}
+.qr-card .qc-pos,.qr-card .qc-office{font-size:13px}
+.qr-card .qc-note{font-size:11px;color:var(--muted);margin-top:6px}
 /* เปิดในเบราว์เซอร์ภายในแอป (LINE ฯลฯ) */
 .inapp{border:2px solid #f59e0b;background:var(--warn-soft)}
 .inapp h3{color:var(--warn);font-size:17px}
@@ -167,7 +184,7 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
 .staff-item:last-child{border-bottom:0}
 .staff-item .who{min-width:0}
 .staff-item .who b{display:block}
-.staff-item .acts{display:flex;gap:6px;flex:none}
+.staff-item .acts{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end;max-width:58%}
 
 /* หน้าต่างซ้อน */
 .overlay{position:fixed;inset:0;z-index:50;background:rgba(10,20,25,.62);display:flex;align-items:flex-end;justify-content:center}
@@ -263,6 +280,13 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
     <div class="card">
       <label for="staffSel">ชื่อเจ้าหน้าที่</label>
       <select id="staffSel"><option value="">กำลังโหลด…</option></select>
+      <div id="methodRow" class="method" hidden>
+        <span>ยืนยันตัวตนด้วย</span>
+        <div class="seg" role="group" aria-label="วิธียืนยันตัวตน">
+          <button type="button" data-m="face">สแกนใบหน้า</button>
+          <button type="button" data-m="qr">บัตร QR</button>
+        </div>
+      </div>
       <div id="regToday" class="today">
         <div><span>เข้างานวันนี้</span><b id="tIn">—</b><em id="tInS"></em></div>
         <div><span>ออกงานวันนี้</span><b id="tOut">—</b><em id="tOutS"></em></div>
@@ -306,6 +330,7 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
       <ul>
         <li><b>เข้างาน:</b> สแกนใบหน้า → ตรวจ GPS ต้องอยู่ภายใน <b id="rRadius">50</b> เมตรจากจุดกลางสำนักงาน (วัดเป็นเส้นตรง ไม่ใช่ระยะเดินตามถนน) → บันทึกเวลาจากเซิร์ฟเวอร์</li>
         <li><b>ออกงาน:</b> สแกนใบหน้า → บันทึกเวลาจากเซิร์ฟเวอร์ ไม่จำกัดระยะทาง</li>
+        <li><b>บัตร QR ประจำตัว:</b> ใช้แทนการสแกนใบหน้าได้ สำหรับโทรศัพท์ที่สแกนใบหน้าไม่ได้ (ขอบัตรจากผู้ดูแล) — เงื่อนไขอื่นเหมือนเดิม และระบบจะถ่ายภาพยืนยันทุกครั้ง</li>
         <li>เวลาทำงาน <span id="rHours">08:30–16:30</span> น. · เวลาที่บันทึกเป็นเวลาของเซิร์ฟเวอร์ ไม่ใช่นาฬิกาในมือถือ</li>
         <li id="rOt" hidden><b>นอกเวลาราชการ:</b> วันทำการ (จันทร์–ศุกร์) <span id="rOtW">16:30–18:30</span> น. · วันหยุด (เสาร์–อาทิตย์/นักขัตฤกษ์) <span id="rOtH">09:00–12:00</span> น.
           — เข้าสแกนใบหน้า + GPS เหมือนเข้างาน ลงเวลาได้ก่อนเวลาเริ่ม 30 นาที · ออกสแกนใบหน้า · นับชั่วโมงเฉพาะในช่วงเวลาที่กำหนด</li>
@@ -487,6 +512,9 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
 const API_URL = 'https://script.google.com/macros/s/AKfycbyQGly0OFe7MTOr18REDGWPPIni74E15kkVwzVtZN36s9bltM1JxL4GcGBBwmsWbNaQ/exec';
 
 const FACE_CDN = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15';
+const JSQR_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';                 // อ่าน QR จากกล้อง
+const QRGEN_URL = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';      // สร้างบัตร QR (ผู้ดูแล)
+const QR_RE = /^SA1:([A-Za-z0-9_-]+):([0-9a-f]{64})$/i;                                  // ข้อความในบัตร QR
 
 /* ---------- เครื่องมือ ---------- */
 const $ = (s, el) => (el || document).querySelector(s);
@@ -510,6 +538,7 @@ const ICONS = {
 const S = {
   cfg: null, offset: 0, lastInit: 0, busy: false, token: null, stream: null,
   staffId: store.get('sa.staffId') || '',
+  method: store.get('sa.method') === 'qr' ? 'qr' : 'face', // วิธียืนยันตัวตนที่เลือกไว้ในเครื่องนี้
   pin: sess.get('sa.pin') || '',
   admin: null,
 };
@@ -568,7 +597,7 @@ async function refreshInit(first) {
     S.lastInit = Date.now();
     hideBanner();
     renderAll();
-    if (first) setTimeout(() => { if (staffById(S.staffId)) loadFace().catch(() => {}); }, 1500);
+    if (first) setTimeout(preload, 1500);
   } catch (e) {
     showBanner('bad', esc(e.message) + ' <button class="btn sm" onclick="refreshInit()">ลองใหม่</button>');
   }
@@ -602,6 +631,17 @@ function renderAll() {
 
 function staffById(id) { return S.cfg && S.cfg.staff.find(s => s.id === id); }
 
+/** ใช้บัตร QR แทนการสแกนใบหน้าหรือไม่: มีบัตร และ (ยังไม่ลงทะเบียนใบหน้า หรือเลือกใช้ QR ในเครื่องนี้) */
+function useQr(st) { return !!(st && st.hasQr && (!st.enrolled || S.method === 'qr')); }
+function idText(st) { return useQr(st) ? 'สแกนบัตร QR' : 'สแกนใบหน้า'; }
+
+/** โหลดล่วงหน้าตามวิธีที่จะใช้ (ใบหน้า: โมเดล + เตรียม GPU · QR: ตัวอ่าน QR) */
+function preload() {
+  const st = staffById(S.staffId);
+  if (!st) return;
+  (useQr(st) ? loadJsQR() : loadFace()).catch(() => {});
+}
+
 function renderToday() {
   const st = staffById(S.staffId);
   const t = (S.cfg && st && S.cfg.todayStatus[st.id]) || {};
@@ -611,9 +651,12 @@ function renderToday() {
   $('#tOutS').innerHTML = t.outStatus ? statusTag(t.outStatus) : '';
   const note = $('#staffNote');
   note.hidden = true;
-  if (st && !st.enrolled) {
+  // เลือกวิธียืนยันตัวตน: แสดงเมื่อมีทั้งข้อมูลใบหน้าและบัตร QR
+  $('#methodRow').hidden = !(st && st.enrolled && st.hasQr);
+  $$('#methodRow .seg button').forEach(b => b.classList.toggle('on', b.dataset.m === (useQr(st) ? 'qr' : 'face')));
+  if (st && !st.enrolled && !st.hasQr) {
     note.className = 'note warn'; note.hidden = false;
-    note.textContent = 'ยังไม่ได้ลงทะเบียนใบหน้า — กรุณาติดต่อผู้ดูแลเพื่อลงทะเบียนก่อนใช้งาน';
+    note.textContent = 'ยังไม่ได้ลงทะเบียนใบหน้าหรือรับบัตร QR — กรุณาติดต่อผู้ดูแลก่อนใช้งาน';
   } else if (t.leave) {
     note.className = 'note info'; note.hidden = false;
     note.textContent = 'วันนี้มีบันทึก: ' + t.leave;
@@ -621,11 +664,11 @@ function renderToday() {
     note.className = 'note warn'; note.hidden = false;
     note.textContent = 'ผู้ดูแลยังไม่ได้กำหนดพิกัดสำนักงาน — ยังลงเวลาเข้างานไม่ได้';
   }
-  const can = !!(st && st.enrolled);
+  const can = !!(st && (st.enrolled || st.hasQr));
   $('#btnIn').disabled = !can;
   $('#btnOut').disabled = !can;
-  $('#inSub').textContent = t.in ? 'ลงเวลาแล้ว ' + t.in.slice(0, 5) + ' น.' : `สแกนใบหน้า + ตรวจ GPS (ไม่เกิน ${S.cfg ? S.cfg.office.radius : 50} ม.)`;
-  $('#outSub').textContent = t.out ? 'ลงเวลาแล้ว ' + t.out.slice(0, 5) + ' น.' : 'สแกนใบหน้า (ไม่ตรวจ GPS)';
+  $('#inSub').textContent = t.in ? 'ลงเวลาแล้ว ' + t.in.slice(0, 5) + ' น.' : `${idText(st)} + ตรวจ GPS (ไม่เกิน ${S.cfg ? S.cfg.office.radius : 50} ม.)`;
+  $('#outSub').textContent = t.out ? 'ลงเวลาแล้ว ' + t.out.slice(0, 5) + ' น.' : `${idText(st)} (ไม่ตรวจ GPS)`;
   renderOt(st, can);
 }
 
@@ -663,8 +706,8 @@ function renderOt(st, can) {
   if (o.out) { note.className = 'note info'; note.textContent = 'ชั่วโมงที่นับได้วันนี้: ' + fmtHours(o.hours); }
   $('#btnOtIn').disabled = !can;
   $('#btnOtOut').disabled = !can;
-  $('#otInSub').textContent = o.in ? 'ลงเวลาแล้ว ' + o.in.slice(0, 5) + ' น.' : `ลงเวลาได้ ${ot.openFrom}–${ot.end} น. · สแกนใบหน้า + ตรวจ GPS`;
-  $('#otOutSub').textContent = o.out ? 'ลงเวลาแล้ว ' + o.out.slice(0, 5) + ' น.' : 'สแกนใบหน้า (ไม่ตรวจ GPS)';
+  $('#otInSub').textContent = o.in ? 'ลงเวลาแล้ว ' + o.in.slice(0, 5) + ' น.' : `ลงเวลาได้ ${ot.openFrom}–${ot.end} น. · ${idText(st)} + ตรวจ GPS`;
+  $('#otOutSub').textContent = o.out ? 'ลงเวลาแล้ว ' + o.out.slice(0, 5) + ' น.' : `${idText(st)} (ไม่ตรวจ GPS)`;
 }
 
 function statusTag(s) {
@@ -863,11 +906,11 @@ const DETECT_SIZE = LOW_END ? 224 : 320;
 const MIN_SCORE = 0.55;                 // ความชัดขั้นต่ำของใบหน้าที่ใช้ได้
 const FACE = { loadMs: 0, warmMs: 0 };  // เวลาโหลดระบบ / เวลาเตรียม GPU ครั้งแรก
 let facePromise = null;
-function loadScript(src) {
+function loadScript(src, failMsg) {
   return new Promise((res, rej) => {
     const s = document.createElement('script');
     s.src = src; s.async = true; s.crossOrigin = 'anonymous';
-    s.onload = res; s.onerror = () => rej(new Error('โหลดระบบจดจำใบหน้าไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต'));
+    s.onload = res; s.onerror = () => rej(new Error(failMsg || 'โหลดระบบจดจำใบหน้าไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต'));
     document.head.appendChild(s);
   });
 }
@@ -908,13 +951,13 @@ function camErr(e) {
   return 'เปิดกล้องไม่สำเร็จ: ' + (e && e.message ? e.message : e);
 }
 
-async function startCamera(video) {
+async function startCamera(video, facing = 'user') {
   if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     throw new Error('เบราว์เซอร์นี้ใช้กล้องไม่ได้ — กรุณาเปิดลิงก์ด้วย Chrome หรือ Safari (หากเปิดจาก LINE ให้กด "เปิดในเบราว์เซอร์")');
   }
   stopCamera();
   try {
-    S.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+    S.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 } } });
   } catch (e) { throw new Error(camErr(e)); }
   video.srcObject = S.stream;
   try { await video.play(); } catch (e) { /* autoplay อาจถูกบล็อกชั่วคราว */ }
@@ -979,6 +1022,76 @@ async function scanFace(tok, opt) {
 }
 
 const sec = ms => (ms / 1000).toFixed(1);
+
+/* ---------- บัตร QR ประจำตัว: ช่องทางสำรองของการสแกนใบหน้า ---------- */
+let jsqrPromise = null, qrgenPromise = null;
+function loadJsQR() {
+  if (!jsqrPromise) {
+    jsqrPromise = window.jsQR ? Promise.resolve() : loadScript(JSQR_URL, 'โหลดตัวอ่าน QR ไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต');
+    jsqrPromise.catch(() => { jsqrPromise = null; });
+  }
+  return jsqrPromise;
+}
+function loadQrGen() {
+  if (!qrgenPromise) {
+    qrgenPromise = window.qrcode ? Promise.resolve() : loadScript(QRGEN_URL, 'โหลดตัวสร้างบัตร QR ไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ต');
+    qrgenPromise.catch(() => { qrgenPromise = null; });
+  }
+  return qrgenPromise;
+}
+
+/** อ่านบัตร QR ด้วยกล้องหลัง แล้วถ่ายภาพยืนยันด้วยกล้องหน้า (ถ้าเปิดบันทึกภาพ) → { qr: รหัสลับ, photo } */
+async function qrIdentity(tok, st) {
+  scanMsg('กำลังเตรียมตัวอ่าน QR…');
+  await loadJsQR(); checkTok(tok);
+  const video = $('#video'), cam = $('#scanner .cam'), ring = $('#ring');
+  cam.classList.add('qr');
+  try {
+    scanMsg('กำลังเปิดกล้องหลัง…');
+    await startCamera(video, 'environment'); checkTok(tok);
+    scanMsg('ส่องกล้องไปที่บัตร QR ของท่าน ให้บัตรอยู่ในกรอบ');
+    const c = document.createElement('canvas');
+    const g = c.getContext('2d', { willReadFrequently: true });
+    const t0 = Date.now();
+    let token = '';
+    while (!token) {
+      checkTok(tok);
+      if (Date.now() - t0 > 45000) throw new Error('อ่านบัตร QR ไม่สำเร็จ — ถือบัตรให้นิ่ง ห่างกล้องประมาณ 15–20 ซม. ในที่มีแสงสว่าง ไม่ให้แสงสะท้อนบนบัตร แล้วลองใหม่');
+      const w = video.videoWidth, h = video.videoHeight;
+      if (w && h) {
+        const k = Math.min(1, 640 / Math.max(w, h));
+        c.width = Math.round(w * k); c.height = Math.round(h * k);
+        g.drawImage(video, 0, 0, c.width, c.height);
+        const code = jsQR(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: 'dontInvert' });
+        if (code && code.data) {
+          const m = code.data.trim().match(QR_RE);
+          if (!m) { ring.className = 'ring bad'; scanMsg('QR นี้ไม่ใช่บัตรของระบบลงเวลา'); }
+          else if (m[1] !== st.id) {
+            const o = staffById(m[1]);
+            ring.className = 'ring bad'; scanMsg(`บัตรนี้เป็นของ ${o ? o.name : 'เจ้าหน้าที่คนอื่น'} ไม่ใช่ ${st.name}`);
+          } else { token = m[2].toLowerCase(); ring.className = 'ring ok'; }
+        }
+      }
+      if (!token) await sleep(120);
+    }
+    stopCamera();
+    // ถ่ายภาพยืนยันตัวตนด้วยกล้องหน้า (ป้องกันการใช้บัตรของผู้อื่น) — ถ้ากล้องหน้าใช้ไม่ได้จะลงเวลาต่อโดยไม่มีภาพ
+    let photo = '';
+    if (S.cfg.savePhoto) {
+      cam.classList.remove('qr'); ring.className = 'ring';
+      try {
+        scanMsg('อ่านบัตรแล้ว ✓ ต่อไปถ่ายภาพยืนยัน — มองกล้องหน้า');
+        await startCamera(video, 'user'); checkTok(tok);
+        for (let i = 3; i > 0; i--) { scanMsg(`ถ่ายภาพยืนยันใน ${i}… มองกล้องหน้า`); await sleep(700); checkTok(tok); }
+        photo = snapshot(video);
+      } catch (e) { if (e.cancelled) throw e; photo = ''; }
+      stopCamera();
+    }
+    return { qr: token, photo };
+  } finally {
+    cam.classList.remove('qr');
+  }
+}
 
 /** สแกนไม่สำเร็จภายในเวลา: บอกสาเหตุที่พบบ่อยที่สุดระหว่างสแกน พร้อมวิธีแก้ */
 function scanFailMsg(n) {
@@ -1092,7 +1205,8 @@ async function clockFlow(kind) {
   const t = (F.ot ? (S.cfg.todayOt || {})[st.id] : S.cfg.todayStatus[st.id]) || {};
   const off = S.cfg.office;
   const ot = S.cfg.ot;
-  if (!st.enrolled) return showResult('bad', 'ยังไม่ได้ลงทะเบียนใบหน้า', `<p>${esc(st.name)} ยังไม่มีข้อมูลใบหน้าในระบบ กรุณาติดต่อผู้ดูแลเพื่อลงทะเบียนก่อนใช้งาน</p>`);
+  if (!st.enrolled && !st.hasQr) return showResult('bad', 'ยังไม่ได้ลงทะเบียนใบหน้า', `<p>${esc(st.name)} ยังไม่มีข้อมูลใบหน้าหรือบัตร QR ในระบบ กรุณาติดต่อผู้ดูแลก่อนใช้งาน</p>`);
+  const qr = useQr(st);
   if (F.ot && !ot) return showResult('bad', 'ยังใช้งานไม่ได้', '<p>ผู้ดูแลต้อง Deploy ระบบหลังบ้าน (Code.gs) เวอร์ชันใหม่ก่อน</p>');
   if (kind === 'in' && t.in) return showResult('warn', 'ลงเวลาเข้างานแล้ว', `<p>วันนี้ลงเวลาเข้างานเมื่อ <b>${esc(t.in)} น.</b></p>`);
   if (kind === 'out' && t.out) return showResult('warn', 'ลงเวลาออกงานแล้ว', `<p>วันนี้ลงเวลาออกงานเมื่อ <b>${esc(t.out)} น.</b></p>`);
@@ -1110,12 +1224,13 @@ async function clockFlow(kind) {
   if (kind === 'out' && !t.in && !confirm('วันนี้ยังไม่มีเวลาเข้างานในระบบ ต้องการลงเวลาออกงานต่อหรือไม่?')) return;
 
   S.busy = true;
+  const idStep = ['face', qr ? '1 สแกนบัตร QR' : '1 สแกนใบหน้า'];
   const tok = openScanner(F.title, st.name,
-    F.gps ? [['face', '1 สแกนใบหน้า'], ['gps', '2 ตรวจ GPS'], ['save', '3 บันทึกเวลา']]
-          : [['face', '1 สแกนใบหน้า'], ['save', '2 บันทึกเวลา']]);
+    F.gps ? [idStep, ['gps', '2 ตรวจ GPS'], ['save', '3 บันทึกเวลา']]
+          : [idStep, ['save', '2 บันทึกเวลา']]);
   try {
     step('face', 'active');
-    const face = await scanFace(tok, { samples: 3 });
+    const ident = qr ? await qrIdentity(tok, st) : await scanFace(tok, { samples: 3 });
     step('face', 'done');
 
     let pos = null;
@@ -1132,7 +1247,9 @@ async function clockFlow(kind) {
     step('save', 'active');
     $('#scanCancel').hidden = true;
     scanMsg('กำลังตรวจสอบกับเซิร์ฟเวอร์และบันทึกเวลา…');
-    const payload = { staffId: st.id, descriptors: face.descriptors, photo: S.cfg.savePhoto ? face.photo : '' };
+    const payload = { staffId: st.id, photo: S.cfg.savePhoto ? ident.photo : '' };
+    if (qr) Object.assign(payload, { method: 'qr', qr: ident.qr });
+    else payload.descriptors = ident.descriptors;
     if (pos) Object.assign(payload, { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy });
     const r = await api(F.action, payload);
     step('save', 'done');
@@ -1269,8 +1386,8 @@ function dailyHtml(r) {
     `<div>${esc(b.label || b.type)} <b>${b.count}</b> คน</div><div>${right[i] || ''}</div>`).join('');
   const rows = r.rows.map(x => `<tr>
       <td class="num">${x.no}</td><td class="name">${esc(x.name)}</td><td>${esc(x.position)}</td>
-      <td class="num">${x.in ? 'สแกน ✓' : ''}</td><td class="num">${esc(x.in)}</td>
-      <td class="num">${x.out ? 'สแกน ✓' : ''}</td><td class="num">${esc(x.out)}</td>
+      <td class="num">${x.in ? (x.inMethod === 'QR' ? 'QR ✓' : 'สแกน ✓') : ''}</td><td class="num">${esc(x.in)}</td>
+      <td class="num">${x.out ? (x.outMethod === 'QR' ? 'QR ✓' : 'สแกน ✓') : ''}</td><td class="num">${esc(x.out)}</td>
       <td>${esc(x.note)}${x.photoIn ? ` <a class="no-print small" href="${esc(x.photoIn)}" target="_blank" rel="noopener">ภาพเข้า</a>` : ''}${x.photoOut ? ` <a class="no-print small" href="${esc(x.photoOut)}" target="_blank" rel="noopener">ภาพออก</a>` : ''}</td></tr>`);
   for (let i = r.rows.length; i < 12; i++) rows.push(`<tr><td class="num">${i + 1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`);
   const failed = r.failed.length ? `<div class="card no-print"><h3>การสแกนที่ไม่สำเร็จ (${r.failed.length})</h3>
@@ -1427,9 +1544,11 @@ async function loadStaffAdmin() {
         <div class="who"><b>${esc(s.name)}</b>
           <span class="small muted">${esc(s.id)} · ${esc(s.position || '-')} · ${esc(s.type)}</span><br>
           ${s.enrolled ? `<span class="tag ok">ลงทะเบียนใบหน้าแล้ว</span>` : '<span class="tag warn">ยังไม่ลงทะเบียนใบหน้า</span>'}
+          ${s.hasQr ? '<span class="tag info">มีบัตร QR</span>' : ''}
           ${s.active ? '' : '<span class="tag gray">ระงับ</span>'}</div>
         <div class="acts">
           <button class="btn sm" data-edit="${esc(s.id)}">แก้ไข</button>
+          <button class="btn sm" data-qr="${esc(s.id)}">บัตร QR</button>
           <button class="btn sm primary" data-enroll="${esc(s.id)}">สแกนใบหน้า</button>
         </div></div>`).join('') : '<p class="muted">ยังไม่มีรายชื่อ กด "+ เพิ่มเจ้าหน้าที่"</p>';
     $('#lvStaff').innerHTML = a.staff.filter(s => s.active).map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
@@ -1507,6 +1626,95 @@ async function enrollFlow(s) {
     closeOverlay('#scanner');
     if (!e.cancelled) showResult('bad', 'ลงทะเบียนไม่สำเร็จ', `<p>${esc(e.message)}</p>`);
   } finally { stopCamera(); S.busy = false; }
+}
+
+/* บัตร QR ประจำตัว (ผู้ดูแล): ออกบัตร / ออกใหม่ / ยกเลิก — รหัสในบัตรแสดงได้ครั้งเดียวตอนออกบัตร */
+function qrModal(id) {
+  const s = S.admin && S.admin.staff.find(x => x.id === id); if (!s) return;
+  $('#modalBody').innerHTML = `<h2>บัตร QR ประจำตัว</h2>
+    <p><b>${esc(s.name)}</b><br><span class="small muted">${s.hasQr ? 'ออกบัตรแล้วเมื่อ ' + esc(thaiStamp(s.qrAt)) : 'ยังไม่มีบัตร QR'}</span></p>
+    <div class="note info">ใช้แทนการสแกนใบหน้า สำหรับโทรศัพท์ที่สแกนใบหน้าไม่ได้ · เงื่อนไขอื่นเหมือนเดิม (เข้างานต้องอยู่ในรัศมี GPS) และระบบถ่ายภาพยืนยันทุกครั้ง ·
+      <b>ต้องพิมพ์เป็นบัตรกระดาษ</b> เพราะโทรศัพท์สแกนภาพบนหน้าจอของตัวเองไม่ได้ · บัตรแสดงได้ครั้งเดียวตอนออกบัตร ถ้าหายให้ออกบัตรใหม่ บัตรเดิมจะใช้ไม่ได้ทันที</div>
+    <div id="qrOut"></div><div id="qErr"></div>
+    <div class="btns">
+      <button id="qIssue" class="btn primary">${s.hasQr ? 'ออกบัตรใหม่ (ยกเลิกบัตรเดิม)' : 'ออกบัตร QR'}</button>
+      ${s.hasQr ? '<button id="qRevoke" class="btn danger">ยกเลิกบัตร QR</button>' : ''}
+      <button id="qClose" class="btn ghost">ปิด</button>
+    </div>`;
+  openOverlay('#modal');
+  $('#qClose').onclick = () => closeOverlay('#modal');
+  $('#qIssue').onclick = () => withBusy($('#qIssue'), async () => {
+    if (s.hasQr && !confirm(`ออกบัตรใหม่ให้ ${s.name}? บัตรเดิมจะใช้ไม่ได้ทันที`)) return;
+    $('#qErr').innerHTML = '';
+    try {
+      await loadQrGen();
+      const r = await adminApi('qrIssue', { staffId: s.id });
+      const card = qrCardHtml(r);
+      $('#qrOut').innerHTML = card + `<div class="btns"><button id="qPrint" class="btn primary">พิมพ์บัตร / บันทึกเป็น PDF</button></div>
+        <p class="small muted">พิมพ์แล้วมอบให้เจ้าหน้าที่ · ปิดหน้าต่างนี้แล้วจะเปิดดูบัตรนี้อีกไม่ได้ (ต้องออกบัตรใหม่)</p>`;
+      $('#qPrint').onclick = () => printQrCard(card, 'บัตร QR ' + r.name);
+      $('#qIssue').hidden = true;
+      if ($('#qRevoke')) $('#qRevoke').hidden = true;
+      loadStaffAdmin(); refreshInit();
+    } catch (e) { $('#qErr').innerHTML = errHtml(e); }
+  });
+  if (s.hasQr) $('#qRevoke').onclick = () => withBusy($('#qRevoke'), async () => {
+    if (!confirm(`ยกเลิกบัตร QR ของ ${s.name}? จะใช้บัตรนี้ลงเวลาไม่ได้อีก`)) return;
+    try {
+      await adminApi('qrRevoke', { staffId: s.id });
+      closeOverlay('#modal'); toast('ยกเลิกบัตร QR แล้ว');
+      loadStaffAdmin(); refreshInit();
+    } catch (e) { $('#qErr').innerHTML = errHtml(e); }
+  });
+}
+
+function qrCardHtml(r) {
+  const q = qrcode(0, 'M'); q.addData(r.payload); q.make();
+  const logo = $('.logo') ? $('.logo').getAttribute('src') : '';
+  const issued = thaiStamp(r.issuedAt).split(' ')[0];
+  return `<div class="qr-card">
+    ${logo ? `<img class="qc-logo" src="${esc(logo)}" alt="">` : ''}
+    <div class="qc-h">บัตร QR ลงเวลาปฏิบัติงาน</div>
+    <div class="qc-code">${q.createSvgTag({ cellSize: 4, margin: 4, scalable: true })}</div>
+    <div class="qc-name">${esc(r.name)}</div>
+    <div class="qc-pos">${esc(r.position || '')}</div>
+    <div class="qc-office">${esc(S.cfg ? S.cfg.officeName : '')}</div>
+    <div class="qc-note">Smart Attendance · ออกบัตร ${esc(issued)} · ห้ามให้ผู้อื่นใช้แทน</div>
+  </div>`;
+}
+
+/** "2026-11-10 09:00:00" → "10/11/2569 09:00 น." */
+function thaiStamp(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  if (!m) return String(s || '');
+  return `${+m[3]}/${+m[2]}/${+m[1] + 543}` + (m[4] ? ` ${m[4]}:${m[5]} น.` : '');
+}
+
+const QR_CARD_PRINT_CSS = `
+body{margin:0;font-family:'Sarabun',Tahoma,sans-serif;color:#111;background:#fff}
+.bar{padding:10px 16px;background:#0f766e}
+.bar button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 18px;background:#fff;color:#0b5c56;cursor:pointer}
+.qr-card{width:72mm;margin:12mm auto;border:2px solid #0f766e;border-radius:12px;padding:5mm;text-align:center}
+.qc-logo{width:13mm;height:13mm;border-radius:50%}
+.qc-h{font-weight:700;color:#0b5c56;font-size:14px}
+.qc-code svg{width:52mm;height:52mm;display:block;margin:2mm auto}
+.qc-name{font-size:17px;font-weight:700}.qc-pos{font-size:13px}.qc-office{font-size:12px;margin-top:1mm}
+.qc-note{font-size:10px;color:#555;margin-top:2mm}
+@media print{.bar{display:none}@page{size:A4;margin:12mm}}`;
+
+function printQrCard(cardHtml, title) {
+  const w = window.open('', '_blank');
+  if (!w) { toast('เบราว์เซอร์บล็อกหน้าต่างใหม่ — กรุณาถ่ายภาพหน้าจอบัตรแล้วพิมพ์แทน'); return; }
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>${QR_CARD_PRINT_CSS}</style></head><body>
+<div class="bar"><button type="button" onclick="window.print()">🖨 พิมพ์ / บันทึกเป็น PDF</button></div>
+${cardHtml}
+<script>window.addEventListener('load',function(){setTimeout(function(){window.print();},400);});<\/script>
+</body></html>`);
+  w.document.close();
 }
 
 /* ลา / ไปราชการ */
@@ -1613,11 +1821,15 @@ function bindUI() {
     S.staffId = e.target.value; store.set('sa.staffId', S.staffId);
     $('#histStaff').value = S.staffId; $('#histOut').innerHTML = '';
     renderToday();
-    if (staffById(S.staffId)) loadFace().catch(() => {});
+    preload();
   });
   $('#btnIn').addEventListener('click', () => clockFlow('in'));
   $('#btnOut').addEventListener('click', () => clockFlow('out'));
   $('#btnDevTest').addEventListener('click', deviceTest);
+  $$('#methodRow .seg button').forEach(b => b.addEventListener('click', () => {
+    S.method = b.dataset.m; store.set('sa.method', S.method);
+    renderToday(); preload();
+  }));
   $('#btnOtIn').addEventListener('click', () => clockFlow('otIn'));
   $('#btnOtOut').addEventListener('click', () => clockFlow('otOut'));
   $('#btnOtDaily').addEventListener('click', loadOtDaily);
@@ -1642,6 +1854,7 @@ function bindUI() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.edit) staffForm(b.dataset.edit);
     if (b.dataset.enroll) enrollConsent(b.dataset.enroll);
+    if (b.dataset.qr) qrModal(b.dataset.qr);
   });
   $('#lvFrom').addEventListener('change', () => { if (!$('#lvTo').value || $('#lvTo').value < $('#lvFrom').value) $('#lvTo').value = $('#lvFrom').value; });
   $('#btnLeave').addEventListener('click', saveLeave);
