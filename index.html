@@ -2,6 +2,20 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
+<script>
+/* เปิดจาก LINE → ส่งต่อไปเปิดใน Chrome/Safari อัตโนมัติ (เบราว์เซอร์ภายใน LINE ไม่ให้เว็บใช้กล้อง)
+   LINE จะเปิดลิงก์ที่มี ?openExternalBrowser=1 ในเบราว์เซอร์ของเครื่อง — ถ้ามีพารามิเตอร์แล้วจะไม่ส่งต่อซ้ำ
+   (ถ้า LINE ไม่ส่งต่อ หน้าเว็บจะแสดงกล่องแนะนำพร้อมปุ่ม "เปิดใน Chrome" แทน) */
+(function () {
+  try {
+    if (!/\bLine\//i.test(navigator.userAgent)) return;
+    var u = new URL(location.href);
+    if (u.searchParams.get('openExternalBrowser') === '1') return;
+    u.searchParams.set('openExternalBrowser', '1');
+    location.replace(u.href);
+  } catch (e) { /* เบราว์เซอร์รุ่นเก่ามาก: ใช้กล่องแนะนำในหน้าเว็บแทน */ }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <title>Smart Attendance · รพ.สต.ทรายมูล</title>
@@ -99,6 +113,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-o
 .ot-card h3{color:var(--ot-dark)}
 .ot-card .today div{background:var(--ot-soft)}
 tr.total td{font-weight:700;background:#f7faf9}
+/* เปิดในเบราว์เซอร์ภายในแอป (LINE ฯลฯ) */
+.inapp{border:2px solid #f59e0b;background:var(--warn-soft)}
+.inapp h3{color:var(--warn);font-size:17px}
+.inapp p{margin:4px 0;font-size:15px}
+.inapp .btns .btn{flex:1}
 
 .today{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .today div{background:var(--bg);border-radius:12px;padding:10px 12px}
@@ -228,6 +247,17 @@ td.num,th.num{text-align:center;font-variant-numeric:tabular-nums}
 <div id="banner" class="banner" hidden></div>
 
 <main>
+  <!-- แสดงเมื่อเปิดในเบราว์เซอร์ภายในแอป (LINE/Facebook) และ LINE ไม่ได้ส่งต่อไปเบราว์เซอร์ของเครื่อง -->
+  <div id="inapp" class="card inapp" hidden>
+    <h3>กรุณาเปิดใน Chrome หรือ Safari</h3>
+    <p id="inappWhy"></p>
+    <div class="btns">
+      <a id="inappOpen" class="btn primary" hidden>เปิดใน Chrome</a>
+      <button id="inappCopy" class="btn" type="button">คัดลอกลิงก์</button>
+    </div>
+    <p id="inappHow" class="small muted"></p>
+  </div>
+
   <!-- ========== ลงเวลา ========== -->
   <section id="tab-clock" class="tab on">
     <div class="card">
@@ -518,6 +548,7 @@ async function adminApi(action, payload) {
 /* ---------- เริ่มต้น ---------- */
 async function boot() {
   bindUI();
+  setupInApp();
   setInterval(tick, 1000); tick();
   if (!apiReady()) {
     showBanner('bad', 'ยังไม่ได้ตั้งค่า <b>API_URL</b> ในไฟล์ index.html — ดูขั้นตอนในคู่มือติดตั้ง');
@@ -702,12 +733,57 @@ async function withBusy(btn, fn) {
 
 /* ---------- ข้อความแนะนำการอนุญาตสิทธิ์ แยก iPhone / Android ---------- */
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+const IN_LINE = /\bLine\//i.test(navigator.userAgent);
+const IN_APP = IN_LINE || /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent);
+const APP_NAME = IN_LINE ? 'LINE' : 'แอปนี้';
+const EXT_URL = location.origin + location.pathname + '?openExternalBrowser=1';
+function openOutsideHow() {
+  return IS_IOS ? `แตะปุ่ม ⋯ หรือปุ่มแชร์ของ ${APP_NAME} แล้วเลือก "เปิดใน Safari"`
+                : `แตะ ⋮ (มุมขวาล่าง) ของ ${APP_NAME} แล้วเลือก "เปิดในเบราว์เซอร์อื่น" หรือ "เปิดใน Chrome"`;
+}
+function inAppMsg(what) {
+  return `เบราว์เซอร์ภายใน ${APP_NAME} ไม่อนุญาตให้ใช้${what} — กดปุ่ม "เปิดใน ${IS_IOS ? 'Safari' : 'Chrome'}" ด้านบนของหน้า หรือ${openOutsideHow()}`;
+}
+
+/** เปิดในเบราว์เซอร์ภายในแอป: แสดงกล่องแนะนำ + ปุ่มเปิดในเบราว์เซอร์ของเครื่อง */
+function setupInApp() {
+  if (!IN_APP) return;
+  $('#inappWhy').textContent = `ตอนนี้เปิดอยู่ในเบราว์เซอร์ของ ${APP_NAME} ซึ่งใช้กล้องสแกนใบหน้าไม่ได้`;
+  $('#inappHow').textContent = 'หรือ' + openOutsideHow();
+  const open = $('#inappOpen');
+  if (IS_ANDROID) {
+    // Android: สั่งเปิดลิงก์เดียวกันใน Chrome โดยตรง
+    open.href = 'intent://' + location.host + location.pathname + '?openExternalBrowser=1#Intent;scheme=https;package=com.android.chrome;end';
+    open.hidden = false;
+  } else if (IN_LINE) {
+    open.href = EXT_URL; open.textContent = 'เปิดใน Safari'; open.hidden = false;
+  }
+  $('#inappCopy').addEventListener('click', async () => {
+    toast(await copyText(EXT_URL) ? 'คัดลอกลิงก์แล้ว — เปิด Chrome/Safari แล้ววางในช่องที่อยู่เว็บ' : 'คัดลอกไม่ได้ — ลิงก์: ' + EXT_URL);
+  });
+  $('#inapp').hidden = false;
+}
+
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) { /* ใช้วิธีสำรอง */ }
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
 function geoDeniedMsg() {
+  if (IN_APP) return inAppMsg('ตำแหน่ง (GPS)');
   return IS_IOS
     ? 'iPhone ยังไม่อนุญาตให้เว็บนี้ใช้ตำแหน่ง — แก้ดังนี้: (1) การตั้งค่า › ความเป็นส่วนตัวและความปลอดภัย › บริการหาตำแหน่ง: เปิด แล้วแตะ "เว็บไซต์ Safari" เลือก "ขณะใช้งานแอป" และเปิด "ตำแหน่งที่แม่นยำ" (2) กลับมาที่ Safari แตะปุ่ม "aA" (หรือ ☰) ที่ช่องที่อยู่เว็บ › การตั้งค่าเว็บไซต์ › ตำแหน่งที่ตั้ง › อนุญาต (3) โหลดหน้าเว็บใหม่แล้วลองอีกครั้ง'
     : 'ยังไม่ได้อนุญาตให้เว็บนี้ใช้ตำแหน่ง — เปิด "ตำแหน่ง" (GPS) ของโทรศัพท์ แล้วใน Chrome แตะไอคอนด้านหน้าช่องที่อยู่เว็บ › สิทธิ์ › ตำแหน่ง › อนุญาต จากนั้นโหลดหน้าเว็บใหม่';
 }
 function camDeniedMsg() {
+  if (IN_APP) return inAppMsg('กล้อง');
   return IS_IOS
     ? 'iPhone ยังไม่อนุญาตให้เว็บนี้ใช้กล้อง — ใน Safari แตะปุ่ม "aA" (หรือ ☰) ที่ช่องที่อยู่เว็บ › การตั้งค่าเว็บไซต์ › กล้อง › อนุญาต (หรือ การตั้งค่า › Safari › กล้อง › อนุญาต) แล้วโหลดหน้าเว็บใหม่'
     : 'ยังไม่ได้อนุญาตให้เว็บนี้ใช้กล้อง — ใน Chrome แตะไอคอนด้านหน้าช่องที่อยู่เว็บ › สิทธิ์ › กล้อง › อนุญาต แล้วโหลดหน้าเว็บใหม่';
