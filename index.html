@@ -739,6 +739,17 @@ const IS_ANDROID = /Android/i.test(navigator.userAgent);
 const IN_LINE = /\bLine\//i.test(navigator.userAgent);
 const IN_APP = IN_LINE || /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent);
 const APP_NAME = IN_LINE ? 'LINE' : 'แอปนี้';
+const IS_SAMSUNG = /SamsungBrowser\//i.test(navigator.userAgent);
+const BROWSER = IN_APP ? APP_NAME : IS_SAMSUNG ? 'Samsung Internet' : /Edg(A|iOS)?\//.test(navigator.userAgent) ? 'Edge'
+  : /CriOS|Chrome\//.test(navigator.userAgent) ? 'Chrome' : /Safari\//.test(navigator.userAgent) ? 'Safari' : 'อื่น ๆ';
+const CHROME_DEFAULT_HOW = 'ตั้ง Chrome เป็นเบราว์เซอร์หลัก: การตั้งค่าโทรศัพท์ › แอปพลิเคชัน › เลือกแอปเริ่มต้น › แอปเบราว์เซอร์ › Chrome แล้วเปิดลิงก์จาก LINE ใหม่';
+/** Samsung Internet (เบราว์เซอร์หลักของมือถือ Samsung) ตั้งค่าสิทธิ์คนละที่กับ Chrome */
+function samsungPermMsg(what) {
+  return `Samsung Internet ยังไม่อนุญาตให้เว็บนี้ใช้${what} — แตะรูปแม่กุญแจ 🔒 หน้าชื่อเว็บ › สิทธิ์ › ${what} › อนุญาต ` +
+    `(หรือ ☰ › การตั้งค่า › เว็บไซต์และการดาวน์โหลด › สิทธิ์ของเว็บไซต์ › ${what}) แล้วโหลดหน้าเว็บใหม่ · ` +
+    `ถ้ายังไม่ได้ ให้ไปที่ การตั้งค่าโทรศัพท์ › แอปพลิเคชัน › Samsung Internet › การอนุญาต › ${what} › อนุญาต · ` +
+    `หรือใช้ Chrome แทน (แนะนำ เร็วกว่า): ${CHROME_DEFAULT_HOW}`;
+}
 const EXT_URL = location.origin + location.pathname + '?openExternalBrowser=1';
 function openOutsideHow() {
   return IS_IOS ? `แตะปุ่ม ⋯ หรือปุ่มแชร์ของ ${APP_NAME} แล้วเลือก "เปิดใน Safari"`
@@ -780,12 +791,14 @@ async function copyText(t) {
 
 function geoDeniedMsg() {
   if (IN_APP) return inAppMsg('ตำแหน่ง (GPS)');
+  if (IS_SAMSUNG) return samsungPermMsg('ตำแหน่ง');
   return IS_IOS
     ? 'iPhone ยังไม่อนุญาตให้เว็บนี้ใช้ตำแหน่ง — แก้ดังนี้: (1) การตั้งค่า › ความเป็นส่วนตัวและความปลอดภัย › บริการหาตำแหน่ง: เปิด แล้วแตะ "เว็บไซต์ Safari" เลือก "ขณะใช้งานแอป" และเปิด "ตำแหน่งที่แม่นยำ" (2) กลับมาที่ Safari แตะปุ่ม "aA" (หรือ ☰) ที่ช่องที่อยู่เว็บ › การตั้งค่าเว็บไซต์ › ตำแหน่งที่ตั้ง › อนุญาต (3) โหลดหน้าเว็บใหม่แล้วลองอีกครั้ง'
     : 'ยังไม่ได้อนุญาตให้เว็บนี้ใช้ตำแหน่ง — เปิด "ตำแหน่ง" (GPS) ของโทรศัพท์ แล้วใน Chrome แตะไอคอนด้านหน้าช่องที่อยู่เว็บ › สิทธิ์ › ตำแหน่ง › อนุญาต จากนั้นโหลดหน้าเว็บใหม่';
 }
 function camDeniedMsg() {
   if (IN_APP) return inAppMsg('กล้อง');
+  if (IS_SAMSUNG) return samsungPermMsg('กล้อง');
   return IS_IOS
     ? 'iPhone ยังไม่อนุญาตให้เว็บนี้ใช้กล้อง — ใน Safari แตะปุ่ม "aA" (หรือ ☰) ที่ช่องที่อยู่เว็บ › การตั้งค่าเว็บไซต์ › กล้อง › อนุญาต (หรือ การตั้งค่า › Safari › กล้อง › อนุญาต) แล้วโหลดหน้าเว็บใหม่'
     : 'ยังไม่ได้อนุญาตให้เว็บนี้ใช้กล้อง — ใน Chrome แตะไอคอนด้านหน้าช่องที่อยู่เว็บ › สิทธิ์ › กล้อง › อนุญาต แล้วโหลดหน้าเว็บใหม่';
@@ -988,7 +1001,7 @@ async function deviceTest() {
     [['load', '1 ระบบสแกน'], ['cam', '2 กล้อง'], ['scan', '3 ความเร็ว']]);
   const R = []; // [รายการ, ผล, true=ผ่าน / null=พอใช้ / false=มีปัญหา]
   const add = (k, v, ok) => R.push([k, v, ok]);
-  add('เบราว์เซอร์', IN_APP ? `ภายใน ${APP_NAME} (ใช้กล้องไม่ได้)` : window.isSecureContext ? 'ปกติ' : 'ไม่ใช่ https', !IN_APP && window.isSecureContext);
+  add('เบราว์เซอร์', IN_APP ? `ภายใน ${APP_NAME} (ใช้กล้องไม่ได้)` : window.isSecureContext ? `ปกติ (${BROWSER})` : 'ไม่ใช่ https', !IN_APP && window.isSecureContext);
   add('หน่วยความจำ / CPU', `${navigator.deviceMemory || '?'} GB · ${navigator.hardwareConcurrency || '?'} คอร์${LOW_END ? ' (โหมดเครื่องสเปกต่ำ)' : ''}`, 'info');
   try {
     step('load', 'active'); scanMsg('กำลังโหลดระบบจดจำใบหน้า… (ครั้งแรกอาจใช้เวลา 10–30 วินาที)');
@@ -1031,6 +1044,7 @@ function showDeviceResult(R) {
   const warn = R.some(r => r[2] === null);
   const tips = [];
   if (bad.includes('เบราว์เซอร์')) tips.push(`เปิดลิงก์ใน ${IS_IOS ? 'Safari' : 'Chrome'} แทน — ${openOutsideHow()}`);
+  if (IS_SAMSUNG && (bad.length || warn) && !bad.includes('ข้อผิดพลาด')) tips.push('เครื่องนี้เปิดด้วย Samsung Internet — แนะนำใช้ Chrome (เตรียมระบบเร็วกว่า): ' + CHROME_DEFAULT_HOW);
   if (bad.includes('ระบบประมวลผล')) tips.push('อัปเดต Chrome เป็นรุ่นล่าสุด (Play Store › Chrome › อัปเดต)');
   if (bad.includes('ความเร็วสแกน') || warn) tips.push('ปิดแอปอื่นที่เปิดค้างไว้ (ปุ่ม ||| › ปิดทั้งหมด) รีสตาร์ทโทรศัพท์ และอัปเดต Chrome แล้วทดสอบอีกครั้ง');
   if (bad.includes('พบใบหน้า')) tips.push('หันหน้าเข้าหาแสง (อย่ายืนย้อนแสง) เช็ดเลนส์กล้องหน้า ถือโทรศัพท์นิ่ง ๆ ให้ใบหน้าเต็มกรอบ');
